@@ -1,0 +1,16 @@
+[
+  {
+    "Name": "新建配置文件",
+    "Projects": [
+      {
+        "Path": "src\\KnowledgeBase.API\\KnowledgeBase.API.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\Knowledgebase.UI\\knowledgebase.ui.esproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

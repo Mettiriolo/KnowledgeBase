@@ -1,0 +1,198 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+/* Toast UI Editor 样式 */
+@import '@toast-ui/editor/dist/toastui-editor.css';
+
+/* 自定义基础样式 */
+@layer base {
+  html {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+
+  /* 滚动条样式 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded;
+  }
+
+    ::-webkit-scrollbar-thumb:hover {
+      @apply bg-gray-500;
+    }
+}
+
+/* 自定义基础样式 */
+@layer base {
+  html {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+
+  /* 滚动条样式 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded;
+  }
+
+    ::-webkit-scrollbar-thumb:hover {
+      @apply bg-gray-500;
+    }
+}
+
+/* Toast UI Editor 自定义样式 */
+.toastui-editor-contents {
+  @apply text-gray-800;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+  .toastui-editor-contents h1,
+  .toastui-editor-contents h2,
+  .toastui-editor-contents h3,
+  .toastui-editor-contents h4,
+  .toastui-editor-contents h5,
+  .toastui-editor-contents h6 {
+    @apply text-gray-900 font-semibold;
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+  }
+
+  .toastui-editor-contents h1 {
+    @apply text-3xl;
+  }
+
+  .toastui-editor-contents h2 {
+    @apply text-2xl;
+  }
+
+  .toastui-editor-contents h3 {
+    @apply text-xl;
+  }
+
+  .toastui-editor-contents h4 {
+    @apply text-lg;
+  }
+
+  .toastui-editor-contents p {
+    @apply mb-4;
+  }
+
+  .toastui-editor-contents code {
+    @apply bg-gray-100 px-2 py-1 rounded text-sm;
+  }
+
+  .toastui-editor-contents pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4;
+  }
+
+    .toastui-editor-contents pre code {
+      @apply bg-transparent p-0;
+    }
+
+  .toastui-editor-contents blockquote {
+    @apply border-l-4 border-primary-500 pl-4 py-2 bg-gray-50 italic my-4;
+  }
+
+  .toastui-editor-contents ul,
+  .toastui-editor-contents ol {
+    @apply mb-4 pl-6;
+  }
+
+  .toastui-editor-contents ul {
+    @apply list-disc;
+  }
+
+  .toastui-editor-contents ol {
+    @apply list-decimal;
+  }
+
+  .toastui-editor-contents li {
+    @apply mb-2;
+  }
+
+  .toastui-editor-contents a {
+    @apply text-primary-600 hover:text-primary-800 underline;
+  }
+
+  .toastui-editor-contents table {
+    @apply w-full border-collapse my-4;
+  }
+
+  .toastui-editor-contents th,
+  .toastui-editor-contents td {
+    @apply border border-gray-300 px-4 py-2;
+  }
+
+  .toastui-editor-contents th {
+    @apply bg-gray-50 font-semibold;
+  }
+
+/* 加载动画 */
+.loading-spinner {
+  @apply animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500;
+}
+
+/* 工具类 */
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* 动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-enter-from {
+  transform: translateX(-10px);
+  opacity: 0;
+}
+
+.slide-leave-to {
+  transform: translateX(10px);
+  opacity: 0;
+}
