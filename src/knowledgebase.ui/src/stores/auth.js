@@ -4,7 +4,7 @@ import router from '@/router'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: null,
+    user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token'),
     isLoading: false,
     lastLoginTime: null
@@ -29,6 +29,7 @@ export const useAuthStore = defineStore('auth', {
         this.lastLoginTime = new Date()
 
         localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
 
         return { success: true, data: response.data }
       } finally {
@@ -47,6 +48,8 @@ export const useAuthStore = defineStore('auth', {
         this.lastLoginTime = new Date()
 
         localStorage.setItem('token', token)
+        localStorage.removeItem('user')
+        localStorage.setItem('user', JSON.stringify(user))
 
         return { success: true, data: response.data }
       } finally {
@@ -63,6 +66,7 @@ export const useAuthStore = defineStore('auth', {
         this.user = null
         this.token = null
         localStorage.removeItem('token')
+        localStorage.removeItem('user')
         router.push('/login')
       }
     },

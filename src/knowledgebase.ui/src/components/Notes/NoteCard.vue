@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="card p-6 hover:shadow-xl transition-all duration-200 cursor-pointer group"
+    class="bg-white rounded-lg shadow hover:shadow-xl transition-all duration-200 cursor-pointer group p-6"
     @click="$emit('view', note.id)"
   >
     <!-- 笔记标题 -->
@@ -19,7 +19,7 @@
           </svg>
         </button>
         <button
-          @click.stop="$emit('delete', note.id)"
+          @click.stop="handleDelete"
           class="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
           title="删除"
         >
@@ -42,6 +42,7 @@
         :key="tag.id"
         :style="{ backgroundColor: tag.color + '20', color: tag.color }"
         class="px-2 py-1 rounded-full text-xs font-medium"
+        @click.stop
       >
         {{ tag.name }}
       </span>
@@ -73,7 +74,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { getPlainText, truncateText, getWordCount } from '@/utils/text'
+import { truncateText, getWordCount } from '@/utils/text'
 import { formatRelativeTime } from '@/utils/date'
 
 const props = defineProps({
@@ -83,7 +84,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['view', 'edit', 'delete'])
+const emit = defineEmits(['view', 'edit', 'delete'])
 
 const contentPreview = computed(() => {
   return truncateText(props.note.content, 150)
@@ -100,6 +101,14 @@ const wordCount = computed(() => {
 const relativeTime = computed(() => {
   return formatRelativeTime(props.note.updatedAt)
 })
+
+// 处理删除操作
+const handleDelete = () => {
+  // 可以在这里添加一个确认提示
+  if (confirm(`确定要删除笔记"${props.note.title}"吗？`)) {
+    emit('delete', props.note.id)
+  }
+}
 </script>
 
 <style scoped>
@@ -115,5 +124,10 @@ const relativeTime = computed(() => {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* 卡片悬停效果 */
+.group:hover {
+  transform: translateY(-2px);
 }
 </style>

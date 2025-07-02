@@ -19,7 +19,10 @@
               </span>
             </p>
           </div>
-          <router-link to="/notes/create" class="btn btn-primary">
+          <router-link 
+            to="/notes/create" 
+            class="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          >
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
@@ -37,7 +40,7 @@
               v-model="searchQuery"
               @input="debouncedSearch"
               placeholder="搜索笔记..."
-              class="input"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
@@ -72,7 +75,10 @@
           <!-- 排序选项 -->
           <div class="bg-white rounded-lg shadow p-4">
             <h3 class="font-semibold text-gray-900 mb-3">排序方式</h3>
-            <select v-model="sortBy" class="input text-sm">
+            <select 
+              v-model="sortBy" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
               <option value="updatedAt">最近更新</option>
               <option value="createdAt">创建时间</option>
               <option value="title">标题排序</option>
@@ -89,10 +95,16 @@
                 已选择 {{ selectedNotes.length }} 篇笔记
               </span>
               <div class="space-x-2">
-                <button @click="batchDelete" class="btn btn-danger text-sm">
+                <button 
+                  @click="batchDelete" 
+                  class="px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                >
                   批量删除
                 </button>
-                <button @click="clearSelection" class="btn btn-ghost text-sm">
+                <button 
+                  @click="clearSelection" 
+                  class="px-3 py-1.5 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                >
                   取消选择
                 </button>
               </div>
@@ -115,7 +127,10 @@
               {{ searchQuery || selectedTags.length ? '尝试调整筛选条件' : '开始创建您的第一篇笔记吧' }}
             </p>
             <div class="mt-6">
-              <router-link to="/notes/create" class="btn btn-primary">
+              <router-link 
+                to="/notes/create" 
+                class="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+              >
                 创建笔记
               </router-link>
             </div>
@@ -184,23 +199,39 @@
 
     <!-- 删除确认对话框 -->
     <teleport to="body">
-      <div v-if="showDeleteConfirm" class="modal-backdrop" @click.self="closeDeleteConfirm">
-        <div class="modal max-w-md animate-slide-up">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">确认删除</h3>
-          <p class="text-gray-600 mb-6">
-            {{ deleteTarget.batch
-              ? `确定要删除选中的 ${selectedNotes.length} 篇笔记吗？`
-              : '确定要删除这篇笔记吗？'
-            }}
-            此操作无法撤销。
-          </p>
-          <div class="flex justify-end space-x-3">
-            <button @click="closeDeleteConfirm" class="btn btn-ghost">
-              取消
-            </button>
-            <button @click="confirmDelete" class="btn btn-danger">
-              确认删除
-            </button>
+      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 overflow-y-auto">
+        <!-- 背景遮罩 -->
+        <div 
+          class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" 
+          @click="closeDeleteConfirm"
+        ></div>
+        
+        <!-- 对话框容器 -->
+        <div class="flex min-h-screen items-center justify-center p-4">
+          <!-- 对话框 -->
+          <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6 transform transition-all">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">确认删除</h3>
+            <p class="text-gray-600 mb-6">
+              {{ deleteTarget.batch
+                ? `确定要删除选中的 ${selectedNotes.length} 篇笔记吗？`
+                : '确定要删除这篇笔记吗？'
+              }}
+              此操作无法撤销。
+            </p>
+            <div class="flex justify-end space-x-3">
+              <button 
+                @click="closeDeleteConfirm" 
+                class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button 
+                @click="confirmDelete" 
+                class="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                确认删除
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -404,3 +435,34 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+/* 对话框动画 */
+.fixed {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.transform {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

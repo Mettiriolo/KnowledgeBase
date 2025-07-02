@@ -114,11 +114,6 @@
             <div class="flex items-center space-x-2">
               <button
                 @click="toggleFormat"
-                class="text-primary-600 hover:text-primary
-
-
-                 ### src/views/NoteDetail.vue（续）
-```vue
                 class="text-primary-600 hover:text-primary-800"
               >
                 {{ renderFormat === 'markdown' ? '查看源文本' : '查看渲染效果' }}
@@ -158,19 +153,32 @@
 
     <!-- 删除确认对话框 -->
     <teleport to="body">
-      <div v-if="showDeleteConfirm" class="modal-backdrop" @click.self="showDeleteConfirm = false">
-        <div class="modal max-w-md animate-slide-up">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">确认删除</h3>
-          <p class="text-gray-600 mb-6">
-            确定要删除笔记"{{ note?.title }}"吗？此操作无法撤销。
-          </p>
-          <div class="flex justify-end space-x-3">
-            <button @click="showDeleteConfirm = false" class="btn btn-ghost">
-              取消
-            </button>
-            <button @click="deleteNote" class="btn btn-danger">
-              确认删除
-            </button>
+      <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 overflow-y-auto">
+        <!-- 背景遮罩 -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="showDeleteConfirm = false"></div>
+        
+        <!-- 对话框容器 -->
+        <div class="flex min-h-screen items-center justify-center p-4">
+          <!-- 对话框 -->
+          <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6 transform transition-all">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">确认删除</h3>
+            <p class="text-gray-600 mb-6">
+              确定要删除笔记"{{ note?.title }}"吗？此操作无法撤销。
+            </p>
+            <div class="flex justify-end space-x-3">
+              <button 
+                @click="showDeleteConfirm = false" 
+                class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button 
+                @click="deleteNote" 
+                class="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                确认删除
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -178,65 +186,72 @@
 
     <!-- AI助手对话框 -->
     <teleport to="body">
-      <div v-if="showAIAssistant" class="modal-backdrop" @click.self="showAIAssistant = false">
-        <div class="modal max-w-2xl animate-slide-up">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold">AI助手 - 关于这篇笔记</h3>
-            <button @click="showAIAssistant = false" class="text-gray-500 hover:text-gray-700">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div class="space-y-4">
-            <!-- 快速操作 -->
-            <div class="grid grid-cols-2 gap-3">
-              <button
-                @click="generateSummary"
-                :disabled="aiStore.isThinking"
-                class="p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-left"
-              >
-                <svg class="w-5 h-5 text-purple-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      <div v-if="showAIAssistant" class="fixed inset-0 z-50 overflow-y-auto">
+        <!-- 背景遮罩 -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="showAIAssistant = false"></div>
+        
+        <!-- 对话框容器 -->
+        <div class="flex min-h-screen items-center justify-center p-4">
+          <!-- 对话框 -->
+          <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 transform transition-all">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold">AI助手 - 关于这篇笔记</h3>
+              <button @click="showAIAssistant = false" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                <p class="text-sm font-medium text-gray-700">生成摘要</p>
-              </button>
-
-              <button
-                @click="extractKeywords"
-                :disabled="aiStore.isThinking"
-                class="p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-left"
-              >
-                <svg class="w-5 h-5 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-                <p class="text-sm font-medium text-gray-700">提取关键词</p>
               </button>
             </div>
 
-            <!-- AI响应区域 -->
-            <div v-if="aiResponse" class="bg-gray-50 p-4 rounded-lg">
-              <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ aiResponse }}</p>
-            </div>
+            <div class="space-y-4">
+              <!-- 快速操作 -->
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  @click="generateSummary"
+                  :disabled="aiStore.isThinking"
+                  class="p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-left"
+                >
+                  <svg class="w-5 h-5 text-purple-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p class="text-sm font-medium text-gray-700">生成摘要</p>
+                </button>
 
-            <!-- 自由提问 -->
-            <div class="flex space-x-2">
-              <input
-                v-model="aiQuestion"
-                @keyup.enter="askAboutNote"
-                placeholder="询问关于这篇笔记的任何问题..."
-                class="flex-1 input"
-                :disabled="aiStore.isThinking"
-              />
-              <button
-                @click="askAboutNote"
-                :disabled="!aiQuestion.trim() || aiStore.isThinking"
-                class="btn btn-primary"
-              >
-                <LoadingSpinner v-if="aiStore.isThinking" size="small" color="white" />
-                <span v-else>发送</span>
-              </button>
+                <button
+                  @click="extractKeywords"
+                  :disabled="aiStore.isThinking"
+                  class="p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-left"
+                >
+                  <svg class="w-5 h-5 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  <p class="text-sm font-medium text-gray-700">提取关键词</p>
+                </button>
+              </div>
+
+              <!-- AI响应区域 -->
+              <div v-if="aiResponse" class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ aiResponse }}</p>
+              </div>
+
+              <!-- 自由提问 -->
+              <div class="flex space-x-2">
+                <input
+                  v-model="aiQuestion"
+                  @keyup.enter="askAboutNote"
+                  placeholder="询问关于这篇笔记的任何问题..."
+                  class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  :disabled="aiStore.isThinking"
+                />
+                <button
+                  @click="askAboutNote"
+                  :disabled="!aiQuestion.trim() || aiStore.isThinking"
+                  class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <LoadingSpinner v-if="aiStore.isThinking" size="small" color="white" />
+                  <span v-else>发送</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -253,7 +268,7 @@ import { useAIStore } from '@/stores/ai'
 import { useNotificationStore } from '@/stores/notification'
 import Layout from '@/components/Common/Layout.vue'
 import LoadingSpinner from '@/components/Common/LoadingSpinner.vue'
-import { formatDate, formatRelativeTime } from '@/utils/date'
+import { formatDate } from '@/utils/date'
 import { getWordCount, getCharacterCount, calculateReadingTime } from '@/utils/text'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -292,7 +307,7 @@ const copyLink = async () => {
     const url = window.location.href
     await navigator.clipboard.writeText(url)
     notificationStore.success('链接已复制到剪贴板')
-  } catch (error) {
+  } catch {
     notificationStore.error('复制失败')
   }
 }
@@ -350,7 +365,7 @@ const askAboutNote = async () => {
 
 onMounted(async () => {
   try {
-    note.value = await notesStore.fetchNoteById(noteId.value)
+      note.value = await notesStore.getNote(noteId.value)
   } catch (error) {
     console.error('加载笔记失败:', error)
   } finally {
@@ -358,3 +373,35 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+/* 添加动画效果 */
+.fixed {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 对话框动画 */
+.transform {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
