@@ -6,6 +6,11 @@ namespace KnowledgeBase.API.Middleware
 {
     public class GlobalExceptionHandlerMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlerMiddleware> logger)
     {
+        private static readonly JsonSerializerOptions CachedJsonSerializerOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
         public async Task InvokeAsync(HttpContext context)
         {
             try
@@ -57,10 +62,7 @@ namespace KnowledgeBase.API.Middleware
                     break;
             }
 
-            var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var jsonResponse = JsonSerializer.Serialize(response, CachedJsonSerializerOptions);
 
             await context.Response.WriteAsync(jsonResponse);
         }
