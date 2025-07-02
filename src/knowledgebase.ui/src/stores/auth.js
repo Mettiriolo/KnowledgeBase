@@ -31,8 +31,6 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem('token', token)
 
         return { success: true, data: response.data }
-      } catch (error) {
-        throw error
       } finally {
         this.isLoading = false
       }
@@ -51,8 +49,6 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem('token', token)
 
         return { success: true, data: response.data }
-      } catch (error) {
-        throw error
       } finally {
         this.isLoading = false
       }
@@ -78,7 +74,7 @@ export const useAuthStore = defineStore('auth', {
         const response = await authAPI.validateToken()
         this.user = response.data.user
         return true
-      } catch (error) {
+      } catch {
         this.logout()
         return false
       }
@@ -90,36 +86,39 @@ export const useAuthStore = defineStore('auth', {
         this.token = response.data.token
         localStorage.setItem('token', this.token)
         return true
-      } catch (error) {
+      } catch {
         this.logout()
         return false
       }
     },
 
     async updateUserInfo(userData) {
-      try {
-        const response = await authAPI.updateUserInfo(userData)
-        this.user = response.data
-        return { success: true, data: response.data }
-      } catch (error) {
-        throw error
-      }
+      const response = await authAPI.updateUserInfo(userData)
+      this.user = response.data
+      return { success: true, data: response.data }
     },
 
     async changePassword(currentPassword, newPassword) {
-      try {
         await authAPI.changePassword({ currentPassword, newPassword })
         return { success: true }
-      } catch (error) {
-        throw error
-      }
     },
-
+    async forgotPassword(email) {
+      await authAPI.forgotPassword({ email })
+      return { success: true }
+    },
+    async resetPassword(token,email ,newPassword,confirmPassword) {
+       await authAPI.resetPassword({ token, email, newPassword, confirmPassword })
+       return { success: true}
+    },
+    async verifyResetToken(token, email) {
+      const response = await authAPI.verifyResetToken({ token, email })
+      return { success: true, data: response.data }
+    },
     async initializeAuth() {
       if (this.token) {
         try {
           await this.validateToken()
-        } catch (error) {
+        } catch {
           this.logout()
         }
       }

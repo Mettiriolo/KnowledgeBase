@@ -82,3 +82,37 @@ public class TokenValidationDto
     public string? Message { get; set; }
     public UserDto? User { get; set; }
 }
+
+public class ForgotPasswordRequestDto
+{
+    [Required]
+    [EmailAddress]
+    public required string Email { get; set; }
+}
+
+public class ResetPasswordRequestDto
+{
+    [Required]
+    public required string Token { get; set; }
+
+    [Required]
+    [EmailAddress]
+    public required string Email { get; set; }
+
+    [Required]
+    [StringLength(100, MinimumLength = 6)]
+    public required string NewPassword { get; set; }
+
+    [Compare("NewPassword", ErrorMessage = "The password confirmation does not match.")]
+    public required string ConfirmPassword { get; set; }
+}
+
+public class VerifyResetTokenRequestDto
+{
+    [Required]
+    public required string Token { get; set; }
+
+    [Required]
+    [EmailAddress]
+    public required string Email { get; set; }
+}

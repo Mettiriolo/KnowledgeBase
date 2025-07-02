@@ -1,13 +1,15 @@
+using KnowledgeBase.API.Exceptions;
 using KnowledgeBase.API.Models.DTOs;
 using KnowledgeBase.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace KnowledgeBase.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(IAuthService authService) : ControllerBase
+    public class AuthController(IAuthService authService,ILogger<AuthController> logger) : ControllerBase
     {
 
         /// <summary>
@@ -196,6 +198,65 @@ namespace KnowledgeBase.API.Controllers
                 return StatusCode(500, new { message = "服务器内部错误", error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// 忘记密码 - 发送重置邮件
+        /// </summary>
+        [HttpPost("forgot-password")]
+        [EnableRateLimiting("PasswordReset")]
+        public async Task<IActionResult> ForgotPasswordAsync([FromBody] ForgotPasswordRequestDto request)
+        {
+            try
+            {
+                await authService.SendPasswordResetEmailAsync(request);
+                return Ok(new { message = "如果该邮箱已注册，我们已发送密码重置邮件" });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error sending password reset email");
+                // 始终返回成功以避免信息泄露
+                return Ok(new { message = "如果该邮箱已注册，我们已发送密码重置邮件" });
+            }
+        }
+
+        /// <summary>
+        /// 验证重置令牌
+        /// </summary>
+        [HttpPost("verify-reset-token")]
+        public async Task<IActionResult> VerifyResetTokenAsync([FromBody] VerifyResetTokenRequestDto request)
+        {
+            try
+            {
+                var isValid = await authService.VerifyResetTokenAsync(request);
+                return Ok(new { isValid });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "服务器内部错误", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 重置密码
+        /// </summary>
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequestDto request)
+        {
+            try
+            {
+                await authService.ResetPasswordAsync(request);
+                return Ok(new { message = "密码重置成功" });
+            }
+            catch (BadRequestException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "服务器内部错误", error = ex.Message });
+            }
+        }
+
 
         /// <summary>
         /// 从Claims中获取当前用户ID

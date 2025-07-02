@@ -40,7 +40,7 @@ export const useNotesStore = defineStore('notes', {
       this.isLoading = true
       try {
         const response = await notesAPI.getNotes({ page, limit, tag: tagFilter })
-        this.notes = response.data.notes
+        this.notes = response.data.items
         this.totalNotes = response.data.total
         this.currentPage = page
         this.perPage = limit

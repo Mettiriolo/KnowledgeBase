@@ -33,3 +33,13 @@ export const highlightText = (text, keyword) => {
   const regex = new RegExp(`(${keyword})`, 'gi')
   return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>')
 }
+
+export const calculateReadingTime = (text) => {
+  const wordCount = getWordCount(text)
+  return Math.ceil(wordCount / 200)
+}
+
+export const getCharacterCount = (text) => {
+  const plainText = typeof text === 'string' ? text : getPlainText(text)
+  return plainText.length
+}

@@ -39,5 +39,18 @@ export const authAPI = {
   // 修改密码
   changePassword: (data) => {
     return apiClient.post('/auth/change-password', data)
+  },
+
+  // 忘记密码
+  forgotPassword(data) {
+    return apiClient.post('/auth/forgot-password', data)
+  },
+  // 验证重置密码的token
+  verifyResetToken(data) {
+    return apiClient.post('/auth/verify-reset-token', data)
+  },
+  // 重置密码
+  resetPassword(data) {
+    return apiClient.post('/auth/reset-password', data)
   }
 }

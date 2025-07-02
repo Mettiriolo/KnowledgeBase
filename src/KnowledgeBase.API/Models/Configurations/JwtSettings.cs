@@ -3,7 +3,7 @@ namespace KnowledgeBase.API.Models.Configurations
     /// <summary>
     /// JWT配置设置
     /// </summary>
-    public class JwtSettings
+    public record JwtSettings
     {
         /// <summary>
         /// JWT密钥

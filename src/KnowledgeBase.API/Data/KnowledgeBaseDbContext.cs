@@ -10,6 +10,8 @@ namespace KnowledgeBase.API.Data
         public DbSet<NoteTag> NoteTags { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -10,6 +10,8 @@ const NoteDetail = () => import('@/views/NoteDetail.vue')
 const NoteEditor = () => import('@/views/NoteEditor.vue')
 const Search = () => import('@/views/Search.vue')
 const NotFound = () => import('@/views/NotFound.vue')
+const ForgotPassword = () => import('@/views/ForgotPassword.vue')
+const ResetPassword = () => import('@/views/ResetPassword.vue')
 
 const routes = [
   {
@@ -23,6 +25,24 @@ const routes = [
     meta: {
       requiresAuth: false,
       title: '登录 - AI知识库'
+    }
+  },
+   {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword,
+    meta: {
+      requiresAuth: false,
+      title: '忘记密码 - AI知识库'
+    }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword,
+    meta: {
+      requiresAuth: false,
+      title: '重置密码 - AI知识库'
     }
   },
   {

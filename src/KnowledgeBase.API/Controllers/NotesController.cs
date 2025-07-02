@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KnowledgeBase.API.Models.DTOs;
 using KnowledgeBase.API.Services;
-using System.Net.Mime;
 
 namespace KnowledgeBase.API.Controllers
 {

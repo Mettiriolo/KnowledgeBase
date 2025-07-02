@@ -1,11 +1,12 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using KnowledgeBase.API.Data;
-using KnowledgeBase.API.Services;
 using KnowledgeBase.API.Models.Configurations;
+using KnowledgeBase.API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Text;
+using System.Threading.RateLimiting;
 
 // 创建一个 Web 应用程序构建器实例，用于配置和构建应用程序
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +33,9 @@ builder.Services.AddDbContext<KnowledgeBaseDbContext>(options =>
 // 从配置文件中获取 Redis 连接字符串，并配置 Redis 缓存服务
 builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis"));
+
+// 配置email
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 // 配置JWT设置
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -78,6 +82,7 @@ builder.Services.AddAuthentication(options =>
 
 
 // 注册自定义服务到服务容器中，使用作用域生命周期
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<INotesService, NotesService>();
 builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
@@ -103,6 +108,23 @@ builder.Services.AddCors(options =>
     });
 });
 
+//配置速率限制策略
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("PasswordReset", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromMinutes(15),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+});
+
+
+
 // 构建 Web 应用程序实例
 var app = builder.Build();
 
@@ -115,6 +137,8 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+//使用速率限制
+app.UseRateLimiter();
 // 使用 CORS 策略
 app.UseCors("AllowFrontend");
 // 使用身份验证中间件

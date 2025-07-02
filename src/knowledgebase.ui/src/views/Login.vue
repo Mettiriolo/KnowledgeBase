@@ -75,7 +75,10 @@
           <label class="flex items-center gap-2 select-none">
             <input v-model="form.rememberMe" type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" /> 记住我
           </label>
-          <button type="button" class="text-primary-400 hover:underline focus:outline-none" tabindex="-1">忘记密码？</button>
+          <!-- <button type="button" class="text-primary-400 hover:underline focus:outline-none" @click="showForgot = true">忘记密码？</button> -->
+          <router-link to="/forgot-password" class="text-primary-400 hover:underline focus:outline-none" tabindex="-1">
+            忘记密码？
+          </router-link>
         </div>
         <button type="submit" :disabled="isLoading" class="btn-modern w-full flex items-center justify-center gap-2">
           <LoadingSpinner v-if="isLoading" size="small" color="#fff" />
@@ -131,6 +134,13 @@ const form = reactive({
 })
 
 const redirectUrl = computed(() => route.query.redirect || '/dashboard')
+
+// 忘记密码弹窗相关
+const showForgot = ref(false)
+const forgotEmail = ref('')
+const forgotLoading = ref(false)
+const forgotError = ref('')
+const forgotSuccess = ref('')
 
 const toggleMode = () => {
   isLogin.value = !isLogin.value

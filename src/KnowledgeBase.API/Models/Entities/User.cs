@@ -51,4 +51,9 @@ public class User
     /// 用户的刷新令牌集合
     /// </summary>
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
+
+    /// <summary>
+    /// 用户的密码重置令牌集合
+    /// </summary>
+    public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = [];
 }
