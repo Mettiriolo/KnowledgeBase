@@ -90,14 +90,12 @@
 
         <!-- 笔记正文 -->
         <div class="p-6 lg:p-8">
+          <div v-show="renderFormat === 'markdown'" class="toast-ui-viewer">
+            <div ref="viewerRef"></div>
+          </div>
           <div
-            v-if="renderFormat === 'markdown'"
-            class="prose prose-slate max-w-none"
-            v-html="renderedContent"
-          />
-          <div
-            v-else
-            class="whitespace-pre-wrap text-gray-800"
+            v-show="renderFormat === 'plain'"
+            class="whitespace-pre-wrap text-gray-800 font-mono text-sm p-4 bg-gray-50 rounded-lg"
           >
             {{ note.content }}
           </div>
@@ -231,7 +229,7 @@
 
               <!-- AI响应区域 -->
               <div v-if="aiResponse" class="bg-gray-50 p-4 rounded-lg">
-                <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ aiResponse }}</p>
+                <div ref="aiResponseRef" class="toast-ui-viewer-response"></div>
               </div>
 
               <!-- 自由提问 -->
@@ -261,7 +259,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotesStore } from '@/stores/notes'
 import { useAIStore } from '@/stores/ai'
@@ -270,8 +268,15 @@ import Layout from '@/components/Common/Layout.vue'
 import LoadingSpinner from '@/components/Common/LoadingSpinner.vue'
 import { formatDate } from '@/utils/date'
 import { getWordCount, getCharacterCount, calculateReadingTime } from '@/utils/text'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
+
+// Toast UI Viewer imports
+import Viewer from '@toast-ui/editor/dist/toastui-editor-viewer'
+import '@toast-ui/editor/dist/toastui-editor-viewer.css'
+
+// 代码高亮插件
+import codeSyntaxHighlight from '@toast-ui/editor-plugin-code-syntax-highlight'
+import 'prismjs/themes/prism.css'
+import '@toast-ui/editor-plugin-code-syntax-highlight/dist/toastui-editor-plugin-code-syntax-highlight.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -287,15 +292,123 @@ const aiQuestion = ref('')
 const aiResponse = ref('')
 const renderFormat = ref('markdown')
 
+// DOM refs
+const viewerRef = ref(null)
+const aiResponseRef = ref(null)
+
+// Viewer instances
+const viewerInstance = ref(null)
+const aiViewerInstance = ref(null)
+
 const noteId = computed(() => route.params.id)
 const wordCount = computed(() => note.value ? getWordCount(note.value.content) : 0)
 const characterCount = computed(() => note.value ? getCharacterCount(note.value.content) : 0)
 const readingTime = computed(() => note.value ? calculateReadingTime(note.value.content) : 0)
 
-const renderedContent = computed(() => {
-  if (!note.value) return ''
-  const html = marked(note.value.content)
-  return DOMPurify.sanitize(html)
+// 初始化 Viewer
+const initViewer = async () => {
+  console.log('Initializing viewer...', {
+    hasRef: !!viewerRef.value,
+    hasNote: !!note.value,
+    hasContent: !!note.value?.content,
+    contentLength: note.value?.content?.length
+  })
+
+  // 等待 DOM 更新
+  await nextTick()
+  
+  // 再次检查
+  if (!viewerRef.value) {
+    console.error('Viewer ref is still null after nextTick')
+    return
+  }
+
+  if (!note.value?.content) {
+    console.warn('No content to display')
+    return
+  }
+
+  // 销毁旧实例
+  if (viewerInstance.value) {
+    try {
+      viewerInstance.value.destroy()
+    } catch (e) {
+      console.error('Error destroying viewer:', e)
+    }
+    viewerInstance.value = null
+  }
+
+  try {
+    console.log('Creating new viewer instance...')
+    viewerInstance.value = new Viewer({
+      el: viewerRef.value,
+      initialValue: note.value.content,
+      plugins: [codeSyntaxHighlight]
+    })
+    console.log('Viewer initialized successfully')
+  } catch (error) {
+    console.error('Failed to initialize viewer:', error)
+    notificationStore.error('预览器初始化失败')
+  }
+}
+
+// 初始化 AI 响应 Viewer
+const initAIViewer = async () => {
+  if (!aiResponseRef.value || !aiResponse.value) return
+
+  // 销毁旧实例
+  if (aiViewerInstance.value) {
+    aiViewerInstance.value.destroy()
+    aiViewerInstance.value = null
+  }
+
+  await nextTick()
+
+  try {
+    aiViewerInstance.value = new Viewer({
+      el: aiResponseRef.value,
+      initialValue: aiResponse.value || '',
+      plugins: [codeSyntaxHighlight]
+    })
+  } catch (error) {
+    console.error('Failed to initialize AI viewer:', error)
+  }
+}
+
+// 监听笔记内容变化
+watch(() => note.value?.content, async (newContent, oldContent) => {
+  console.log('Note content changed:', {
+    hasNewContent: !!newContent,
+    newLength: newContent?.length,
+    oldLength: oldContent?.length
+  })
+  
+  if (renderFormat.value === 'markdown' && newContent && newContent !== oldContent) {
+    // 使用 setTimeout 确保 DOM 更新完成
+    setTimeout(() => {
+      initViewer()
+    }, 100)
+  }
+})
+
+// 监听渲染格式变化
+watch(renderFormat, async (newFormat, oldFormat) => {
+  console.log('Render format changed:', { from: oldFormat, to: newFormat })
+  
+  if (newFormat === 'markdown' && note.value?.content) {
+    // 等待 v-show 切换完成
+    await nextTick()
+    setTimeout(() => {
+      initViewer()
+    }, 100)
+  }
+})
+// 监听 AI 响应变化
+watch(aiResponse, async (newResponse) => {
+  if (newResponse) {
+    await nextTick()
+    await initAIViewer()
+  }
 })
 
 const toggleFormat = () => {
@@ -326,7 +439,7 @@ const generateSummary = async () => {
   try {
     aiResponse.value = ''
     const response = await aiStore.generateSummary(note.value)
-    aiResponse.value = response.summary
+    aiResponse.value = `## AI 生成的摘要\n\n${response.summary}`
 
     // 更新笔记摘要
     await notesStore.updateNote(noteId.value, {
@@ -344,7 +457,7 @@ const extractKeywords = async () => {
   try {
     aiResponse.value = ''
     const response = await aiStore.extractKeywords(note.value.content)
-    aiResponse.value = `提取的关键词：\n${response.keywords.join(', ')}`
+    aiResponse.value = `## 提取的关键词\n\n${response.keywords.map(k => `- **${k}**`).join('\n')}`
   } catch (error) {
     notificationStore.error('提取关键词失败', error.message)
   }
@@ -356,7 +469,7 @@ const askAboutNote = async () => {
   try {
     aiResponse.value = ''
     const response = await aiStore.askAboutNote(note.value, aiQuestion.value)
-    aiResponse.value = response.answer
+    aiResponse.value = `## 问题：${aiQuestion.value}\n\n### AI 回答：\n\n${response.answer}`
     aiQuestion.value = ''
   } catch (error) {
     notificationStore.error('AI问答失败', error.message)
@@ -365,17 +478,193 @@ const askAboutNote = async () => {
 
 onMounted(async () => {
   try {
-      note.value = await notesStore.getNote(noteId.value)
+    loading.value = true
+    const loadedNote = await notesStore.getNote(noteId.value)
+    
+    if (!loadedNote) {
+      console.error('Note not found')
+      return
+    }
+
+    note.value = loadedNote
+    console.log('Note loaded:', {
+      id: note.value.id,
+      title: note.value.title,
+      contentLength: note.value.content?.length
+    })
+
+    // 等待 Vue 完成 DOM 更新
+    await nextTick()
+    
+    // 确保 DOM 已经渲染
+    setTimeout(() => {
+      if (renderFormat.value === 'markdown') {
+        initViewer()
+      }
+    }, 100) // 给一点延迟确保 DOM 完全就绪
+    
   } catch (error) {
     console.error('加载笔记失败:', error)
+    notificationStore.error('加载笔记失败')
   } finally {
     loading.value = false
   }
 })
+
+// 清理
+onBeforeUnmount(() => {
+  if (viewerInstance.value) {
+    try {
+      viewerInstance.value.destroy()
+    } catch (e) {
+      console.error('Error destroying viewer on unmount:', e)
+    }
+  }
+  if (aiViewerInstance.value) {
+    try {
+      aiViewerInstance.value.destroy()
+    } catch (e) {
+      console.error('Error destroying AI viewer on unmount:', e)
+    }
+  }
+})
 </script>
 
-<style scoped>
-/* 添加动画效果 */
+<style>
+/* Toast UI Viewer 自定义样式 */
+.toast-ui-viewer .toastui-editor-contents {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #1f2937;
+}
+
+.toast-ui-viewer .toastui-editor-contents p {
+  margin: 1rem 0;
+}
+
+.toast-ui-viewer .toastui-editor-contents h1,
+.toast-ui-viewer .toastui-editor-contents h2,
+.toast-ui-viewer .toastui-editor-contents h3,
+.toast-ui-viewer .toastui-editor-contents h4,
+.toast-ui-viewer .toastui-editor-contents h5,
+.toast-ui-viewer .toastui-editor-contents h6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #111827;
+}
+
+.toast-ui-viewer .toastui-editor-contents h1 {
+  font-size: 2rem;
+}
+
+.toast-ui-viewer .toastui-editor-contents h2 {
+  font-size: 1.5rem;
+}
+
+.toast-ui-viewer .toastui-editor-contents h3 {
+  font-size: 1.25rem;
+}
+
+.toast-ui-viewer .toastui-editor-contents code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  color: #dc2626;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+}
+
+.toast-ui-viewer .toastui-editor-contents pre {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.toast-ui-viewer .toastui-editor-contents pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.toast-ui-viewer .toastui-editor-contents blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #6b7280;
+}
+
+.toast-ui-viewer .toastui-editor-contents a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.toast-ui-viewer .toastui-editor-contents a:hover {
+  color: #1d4ed8;
+}
+
+.toast-ui-viewer .toastui-editor-contents ul,
+.toast-ui-viewer .toastui-editor-contents ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+.toast-ui-viewer .toastui-editor-contents li {
+  margin: 0.5rem 0;
+}
+
+.toast-ui-viewer .toastui-editor-contents table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.toast-ui-viewer .toastui-editor-contents th,
+.toast-ui-viewer .toastui-editor-contents td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+  text-align: left;
+}
+
+.toast-ui-viewer .toastui-editor-contents th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.toast-ui-viewer .toastui-editor-contents tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.toast-ui-viewer .toastui-editor-contents img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+}
+
+/* AI 响应 Viewer 样式 */
+.toast-ui-viewer-response .toastui-editor-contents {
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.toast-ui-viewer-response .toastui-editor-contents h2 {
+  font-size: 1.125rem;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.toast-ui-viewer-response .toastui-editor-contents h3 {
+  font-size: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* 动画效果 */
 .fixed {
   animation: fadeIn 0.2s ease-out;
 }
