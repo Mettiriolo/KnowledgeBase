@@ -79,7 +79,6 @@
         </div>
       </form>
 
-      <!-- AI建议浮动按钮保持不变 -->
       <div class="fixed bottom-6 right-6 z-40">
         <button
           @click="showAISuggestions = true"
@@ -93,13 +92,11 @@
       </div>
     </div>
 
-    <!-- AI建议对话框和其他对话框保持不变 -->
-    <!-- ... -->
   </Layout>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick, getCurrentInstance } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useNotesStore } from '@/stores/notes'
 import { useAIStore } from '@/stores/ai'
@@ -111,15 +108,14 @@ import { getWordCount, getCharacterCount, calculateReadingTime } from '@/utils/t
 import { formatRelativeTime } from '@/utils/date'
 import { debounce } from 'lodash-es'
 
-// Toast UI Editor imports
-import Editor from '@toast-ui/editor'
-import '@toast-ui/editor/dist/toastui-editor.css'
-import '@toast-ui/editor/dist/theme/toastui-editor-dark.css'
+// 直接导入 ToastUI 组件和插件
+import { Editor } from '@toast-ui/editor';
+import codeSyntaxHighlight from '@toast-ui/editor-plugin-code-syntax-highlight';
 
-// Toast UI Editor 插件（可选）
-import codeSyntaxHighlight from '@toast-ui/editor-plugin-code-syntax-highlight'
-import 'prismjs/themes/prism.css'
-import '@toast-ui/editor-plugin-code-syntax-highlight/dist/toastui-editor-plugin-code-syntax-highlight.css'
+// 定义插件数组
+const plugins = [
+  codeSyntaxHighlight
+];
 
 const route = useRoute()
 const router = useRouter()
@@ -175,6 +171,35 @@ watch(() => form, (newVal) => {
 }, { deep: true })
 
 // 自动保存
+
+// 处理编辑器内容变化
+const handleEditorChange = () => {
+  const content = editorInstance.value.getMarkdown()
+  form.content = content
+  if (autoSaveEnabled.value) {
+    autoSave()
+  }
+}
+
+// 处理编辑器失去焦点
+const handleEditorBlur = () => {
+  // 可以在这里添加失去焦点时的逻辑
+}
+
+// 处理图片上传
+const handleImageUpload = async (file, callback) => {
+  try {
+    // 这里添加图片上传逻辑
+    // 上传成功后调用 callback(imageUrl, 'alt text')
+    // 例如: 
+    // const imageUrl = await uploadImage(file)
+    // callback(imageUrl, 'image alt text')
+  } catch (error) {
+    notificationStore.error('图片上传失败', error.message)
+  }
+}
+
+// 自动保存
 const autoSave = debounce(async () => {
   if (autoSaveEnabled.value && isValid.value && hasUnsavedChanges.value) {
     await saveDraft()
@@ -182,50 +207,68 @@ const autoSave = debounce(async () => {
 }, 3000)
 
 // 初始化编辑器
-const initEditor = async () => {
-  // 确保 DOM 元素存在
-  if (!editorRef.value) return
-
-  const options = {
-    el: editorRef.value,
-    height: '600px',
-    initialEditType: 'markdown',
-    previewStyle: 'vertical',
-    initialValue: form.content || '', // 确保有初始值
-    placeholder: '开始写作...',
-    theme: 'light',
-    language: 'zh-CN',
-    usageStatistics: false,
-    toolbarItems: [
-      ['heading', 'bold', 'italic', 'strike'],
-      ['hr', 'quote'],
-      ['ul', 'ol', 'task', 'indent', 'outdent'],
-      ['table', 'image', 'link'],
-      ['code', 'codeblock'],
-      ['scrollSync']
-    ],
-    plugins: [codeSyntaxHighlight],
-    events: {
-      change: () => {
-        const content = editorInstance.value.getMarkdown()
-        form.content = content
-        if (autoSaveEnabled.value) {
-          autoSave()
-        }
-      },
-      keydown: (type, ev) => {
-        if (ev.ctrlKey || ev.metaKey) {
-          if (ev.key === 's') {
+const initEditor = () => {
+  if (editorInstance.value) {
+    editorInstance.value.destroy()
+    editorInstance.value = null
+  }
+  
+  // 确保DOM元素存在
+  if (!editorRef.value) {
+    console.error('Editor element not found')
+    return
+  }
+  
+  try {
+    // 创建编辑器实例
+    editorInstance.value = new Editor({
+      el: editorRef.value,
+      initialEditType: 'markdown',
+      previewStyle: 'vertical',
+      height: 'calc(100vh - 300px)',
+      initialValue: form.content || '',
+      usageStatistics: false,
+      hideModeSwitch: false,
+      plugins: plugins,
+      events: {
+        change: handleEditorChange,
+        blur: handleEditorBlur,
+        keydown: (type, ev) => {
+          // 添加 Ctrl+S / Cmd+S 保存快捷键
+          if ((ev.ctrlKey || ev.metaKey) && ev.key === 's') {
             ev.preventDefault()
             saveNote()
           }
         }
-      }
-    }
+      },
+      hooks: {
+        addImageBlobHook: handleImageUpload,
+        // 添加加载完成后的回调
+        load: function() {
+          // 确保内容是最新的
+          if (form.content) {
+            try {
+              editorInstance.value.setMarkdown(form.content, false)
+            } catch (error) {
+              console.error('Error setting initial content:', error)
+            }
+          }
+        }
+      },
+      toolbarItems: [
+        ['heading', 'bold', 'italic', 'strike'],
+        ['hr', 'quote'],
+        ['ul', 'ol', 'task', 'indent', 'outdent'],
+        ['table', 'image', 'link'],
+        ['code', 'codeblock'],
+        ['scrollSync']
+      ]
+    })
+  } catch (error) {
+    console.error('Failed to initialize editor:', error)
   }
-
-  editorInstance.value = new Editor(options)
 }
+
 // 方法
 const saveNote = async () => {
   if (!isValid.value) return
@@ -414,140 +457,31 @@ onBeforeRouteLeave((to, from, next) => {
 })
 </script>
 
-<style>
-/* Toast UI Editor 自定义样式 */
-.toast-ui-editor {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
-
-.toastui-editor-defaultUI {
-  border: none;
-  border-radius: 0.5rem;
-}
-
-.toastui-editor-defaultUI .toastui-editor-toolbar {
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 0.5rem;
-}
-
-.toastui-editor-defaultUI .toastui-editor-md-container,
-.toastui-editor-defaultUI .toastui-editor-ww-container {
-  background-color: white;
-  padding: 1rem;
-}
-
-.toastui-editor-defaultUI .toastui-editor-md-preview {
-  background-color: white;
-  padding: 1rem;
-}
-
-.toastui-editor-contents {
-  font-size: 1rem;
-  line-height: 1.75;
-}
-
-.toastui-editor-contents p {
-  margin: 1rem 0;
-}
-
-.toastui-editor-contents h1,
-.toastui-editor-contents h2,
-.toastui-editor-contents h3,
-.toastui-editor-contents h4,
-.toastui-editor-contents h5,
-.toastui-editor-contents h6 {
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.toastui-editor-contents code {
-  background-color: #f3f4f6;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-  font-size: 0.875em;
-  color: #dc2626;
-}
-
-.toastui-editor-contents pre {
-  background-color: #1e293b;
-  color: #e2e8f0;
-  padding: 1rem;
+<style scoped>
+/* 编辑器容器样式 */
+:deep(.toastui-editor) {
+  min-height: 500px;
+  border: 1px solid #e2e8f0;
   border-radius: 0.375rem;
-  overflow-x: auto;
-  margin: 1rem 0;
 }
 
-.toastui-editor-contents pre code {
-  background-color: transparent;
-  color: inherit;
-  padding: 0;
+:deep(.toastui-editor-defaultUI) {
+  border: none;
 }
 
-.toastui-editor-contents blockquote {
-  border-left: 4px solid #e5e7eb;
-  padding-left: 1rem;
-  margin: 1rem 0;
-  color: #6b7280;
+:deep(.toastui-editor-ww-container) {
+  height: 100%;
 }
 
-.toastui-editor-contents a {
-  color: #2563eb;
-  text-decoration: underline;
-}
-
-.toastui-editor-contents a:hover {
-  color: #1d4ed8;
-}
-
-.toastui-editor-contents ul,
-.toastui-editor-contents ol {
-  padding-left: 1.5rem;
-  margin: 1rem 0;
-}
-
-.toastui-editor-contents li {
-  margin: 0.5rem 0;
-}
-
-.toastui-editor-contents table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1rem 0;
-}
-
-.toastui-editor-contents th,
-.toastui-editor-contents td {
-  border: 1px solid #e5e7eb;
-  padding: 0.5rem 1rem;
-  text-align: left;
-}
-
-.toastui-editor-contents th {
-  background-color: #f3f4f6;
-  font-weight: 600;
-}
-
-/* 暗色主题调整 */
-.toastui-editor-dark .toastui-editor-contents {
-  color: #e2e8f0;
-}
-
-.toastui-editor-dark .toastui-editor-defaultUI {
-  background-color: #1e293b;
-}
-
-.toastui-editor-dark .toastui-editor-toolbar {
-  background-color: #334155;
-  border-color: #475569;
+:deep(.toastui-editor-contents) {
+  font-size: 16px;
+  line-height: 1.7;
 }
 
 /* 响应式调整 */
 @media (max-width: 768px) {
-  .toastui-editor-defaultUI {
-    height: 400px !important;
+  :deep(.toastui-editor) {
+    min-height: 400px;
   }
 }
 </style>

@@ -31,6 +31,8 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^9.30.0",
     "eslint-plugin-vue": "^10.2.0",
+    "postcss-nesting": "^13.0.2",
+    "sass-embedded": "^1.89.2",
     "vite": "^7.0.0"
   }
 }

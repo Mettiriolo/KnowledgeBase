@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import router from './router'
 import App from './App.vue'
 import './style.css'
+import toastui from './plugins/toastui'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -19,5 +20,6 @@ app.config.globalProperties.$appName = import.meta.env.VITE_APP_NAME || 'AI Know
 
 app.use(pinia)
 app.use(router)
+app.use(toastui)
 
 app.mount('#app')

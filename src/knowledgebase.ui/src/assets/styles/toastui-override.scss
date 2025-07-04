@@ -1,0 +1,232 @@
+/* ToastUI Editor 全局样式覆盖 */
+/* 基础样式 */
+.toastui-editor-defaultUI {
+  border: 1px solid #e5e7eb; /* border-gray-200 */
+  border-radius: 0.25rem; /* rounded */
+  border-color: var(--el-border-color);
+}
+
+.toastui-editor-defaultUI .toastui-editor-toolbar {
+  border-bottom: 1px solid #e5e7eb; /* border-b border-gray-200 */
+  background-color: #f9fafb; /* bg-gray-50 */
+  border-color: var(--el-border-color);
+  background-color: var(--el-bg-color);
+}
+
+.toastui-editor-defaultUI .toastui-editor-md-container,
+.toastui-editor-defaultUI .toastui-editor-ww-container {
+  background-color: #ffffff; /* bg-white */
+  background-color: var(--el-bg-color);
+}
+
+/* 内容区域样式 */
+.toastui-editor-contents,
+.toast-ui-viewer .toastui-editor-contents {
+  color: #1f2937; /* text-gray-800 */
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--el-text-color-primary);
+  
+  p {
+    margin-bottom: 1rem; /* mb-4 */
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #111827; /* text-gray-900 */
+    font-weight: 600; /* font-semibold */
+    margin: 1.2em 0 0.6em;
+    color: var(--el-text-color-primary);
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  h1 { 
+    font-size: 1.875rem; /* text-3xl */
+    line-height: 2.25rem;
+  }
+  h2 { 
+    font-size: 1.5rem; /* text-2xl */
+    line-height: 2rem;
+  }
+  h3 { 
+    font-size: 1.25rem; /* text-xl */
+    line-height: 1.75rem;
+  }
+  h4 { 
+    font-size: 1.125rem; /* text-lg */
+    line-height: 1.75rem;
+  }
+  h5 { 
+    font-size: 1rem; /* text-base */
+    line-height: 1.5rem;
+  }
+  h6 { 
+    font-size: 0.875rem; /* text-sm */
+    line-height: 1.25rem;
+  }
+
+  code {
+    background-color: #f3f4f6; /* bg-gray-100 */
+    padding: 0.25rem 0.5rem; /* px-2 py-1 */
+    border-radius: 0.25rem; /* rounded */
+    font-size: 0.875rem; /* text-sm */
+  }
+
+  pre {
+    background-color: #111827; /* bg-gray-900 */
+    color: #f3f4f6; /* text-gray-100 */
+    padding: 1rem; /* p-4 */
+    border-radius: 0.5rem; /* rounded-lg */
+    overflow-x: auto; /* overflow-x-auto */
+    margin: 1rem 0; /* my-4 */
+    
+    code {
+      background-color: transparent; /* bg-transparent */
+      padding: 0; /* p-0 */
+    }
+  }
+
+  blockquote {
+    border-left: 4px solid #3b82f6; /* border-l-4 border-primary-500 */
+    padding-left: 1rem; /* pl-4 */
+    padding-top: 0.5rem; /* py-2 */
+    padding-bottom: 0.5rem; /* py-2 */
+    background-color: #f9fafb; /* bg-gray-50 */
+    font-style: italic; /* italic */
+    margin: 1rem 0; /* my-4 */
+  }
+
+  ul, ol {
+    margin-bottom: 1rem; /* mb-4 */
+    padding-left: 1.5rem; /* pl-6 */
+  }
+
+  ul {
+    list-style-type: disc; /* list-disc */
+  }
+
+  ol {
+    list-style-type: decimal; /* list-decimal */
+  }
+
+  li {
+    margin-bottom: 0.5rem; /* mb-2 */
+  }
+
+  a {
+    color: #2563eb; /* text-primary-600 */
+    text-decoration: underline; /* underline */
+  }
+  
+  a:hover {
+    color: #1e40af; /* hover:text-primary-800 */
+  }
+
+  table {
+    width: 100%; /* w-full */
+    border-collapse: collapse; /* border-collapse */
+    margin: 1rem 0; /* my-4 */
+  }
+
+  th, td {
+    border: 1px solid #d1d5db; /* border border-gray-300 */
+    padding: 0.5rem 1rem; /* px-4 py-2 */
+  }
+
+  th {
+    background-color: #f9fafb; /* bg-gray-50 */
+    font-weight: 600; /* font-semibold */
+  }
+
+  h1 { font-size: 1.8em; }
+  h2 { font-size: 1.5em; }
+  h3 { font-size: 1.3em; }
+
+  code {
+    font-family: 'Fira Code', 'Source Code Pro', monospace;
+    background-color: var(--el-bg-color-light);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+  }
+
+  pre {
+    background-color: var(--el-bg-color-light);
+    border-radius: 4px;
+    padding: 1em;
+    overflow-x: auto;
+    
+    code {
+      background: transparent;
+      padding: 0;
+    }
+  }
+
+  blockquote {
+    border-left: 4px solid var(--el-border-color);
+    margin: 1em 0;
+    padding: 0.5em 1em;
+    color: var(--el-text-color-secondary);
+    background-color: var(--el-bg-color-light);
+  }
+
+  a {
+    color: var(--el-color-primary);
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  ul, ol {
+    padding-left: 1.5em;
+    margin: 0.8em 0;
+  }
+
+  li {
+    margin: 0.3em 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    
+    th, td {
+      border: 1px solid var(--el-border-color);
+      padding: 0.6em 1em;
+    }
+    
+    th {
+      background-color: var(--el-bg-color-light);
+      font-weight: 600;
+    }
+  }
+}
+
+/* 暗黑模式 */
+.toastui-editor-dark {
+  .toastui-editor-contents {
+    color: var(--el-text-color-primary);
+  }
+  
+  .toastui-editor-defaultUI {
+    border-color: var(--el-border-color);
+  }
+  
+  .toastui-editor-toolbar {
+    background-color: var(--el-bg-color);
+    border-bottom-color: var(--el-border-color);
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .toastui-editor-defaultUI {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
