@@ -1,5 +1,4 @@
 import { Editor } from '@toast-ui/editor';
-import Viewer from '@toast-ui/editor/dist/toastui-editor-viewer';
 import codeSyntaxHighlight from '@toast-ui/editor-plugin-code-syntax-highlight';
 
 // 导入样式
@@ -13,7 +12,6 @@ export default {
     // 添加全局属性
     app.config.globalProperties.$toastui = {
       Editor,
-      Viewer,
       plugins: {
         codeSyntaxHighlight
       }

@@ -144,6 +144,89 @@ export const useAIStore = defineStore('ai', {
         // 退回到本地存储
         this.loadConversationsFromLocal()
       }
+    },
+
+    async improveWriting(content) {
+      if (!content.trim()) return content
+      
+      this.isThinking = true
+      try {
+        const response = await aiAPI.improveWriting({ content: content.trim() })
+        return response.data.improvedContent
+      } catch (error) {
+        console.error('Writing improvement failed:', error)
+        throw error
+      } finally {
+        this.isThinking = false
+      }
+    },
+
+    async expandContent(content) {
+      if (!content.trim()) return content
+      
+      this.isThinking = true
+      try {
+        const response = await aiAPI.expandContent({ content: content.trim() })
+        return response.data.expandedContent
+      } catch (error) {
+        console.error('Content expansion failed:', error)
+        throw error
+      } finally {
+        this.isThinking = false
+      }
+    },
+
+    async suggestOutline(topic) {
+      if (!topic.trim()) return []
+      
+      this.isThinking = true
+      try {
+        const response = await aiAPI.suggestOutline({ topic: topic.trim() })
+        return response.data.outline
+      } catch (error) {
+        console.error('Outline suggestion failed:', error)
+        throw error
+      } finally {
+        this.isThinking = false
+      }
+    },
+
+    async checkGrammar(content) {
+      if (!content.trim()) return { corrections: [], hasErrors: false }
+      
+      this.isThinking = true
+      try {
+        const response = await aiAPI.checkGrammar({ content: content.trim() })
+        return response.data
+      } catch (error) {
+        console.error('Grammar check failed:', error)
+        throw error
+      } finally {
+        this.isThinking = false
+      }
+    },
+
+    async askAboutNote(note, question) {
+      if (!note || !question.trim()) return null
+      
+      this.isThinking = true
+      try {
+        const response = await aiAPI.askAboutNote({ 
+          note: {
+            id: note.id,
+            title: note.title,
+            content: note.content,
+            tags: note.tags
+          },
+          question: question.trim()
+        })
+        return response.data.answer
+      } catch (error) {
+        console.error('Note question failed:', error)
+        throw error
+      } finally {
+        this.isThinking = false
+      }
     }
   }
 })

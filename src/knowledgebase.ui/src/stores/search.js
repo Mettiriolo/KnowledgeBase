@@ -40,6 +40,8 @@ export const useSearchStore = defineStore('search', {
         this.currentPage = page
         this.perPage = limit
         this.addToHistory(query)
+        
+        return response.data.results
       } catch (error) {
         console.error('Search failed:', error)
         throw error
@@ -63,15 +65,25 @@ export const useSearchStore = defineStore('search', {
       }
     },
 
-    addToHistory(query) {
-      const trimmedQuery = query.trim()
-      if (!trimmedQuery) return
+    addToHistory(searchItem) {
+      // 支持字符串或对象格式
+      let item
+      if (typeof searchItem === 'string') {
+        item = { query: searchItem.trim(), type: 'fulltext' }
+      } else {
+        item = { 
+          query: searchItem.query?.trim() || '', 
+          type: searchItem.type || 'fulltext' 
+        }
+      }
+      
+      if (!item.query) return
 
       // 移除重复项
-      this.searchHistory = this.searchHistory.filter(item => item !== trimmedQuery)
+      this.searchHistory = this.searchHistory.filter(histItem => histItem.query !== item.query)
 
       // 添加到开头
-      this.searchHistory.unshift(trimmedQuery)
+      this.searchHistory.unshift(item)
 
       // 限制历史记录数量
       this.searchHistory = this.searchHistory.slice(0, 10)
@@ -88,7 +100,12 @@ export const useSearchStore = defineStore('search', {
     },
 
     removeFromHistory(query) {
-      this.searchHistory = this.searchHistory.filter(item => item !== query)
+      this.searchHistory = this.searchHistory.filter(item => {
+        if (typeof item === 'string') {
+          return item !== query
+        }
+        return item.query !== query
+      })
       this.saveHistoryToLocal()
     },
 
@@ -126,6 +143,16 @@ export const useSearchStore = defineStore('search', {
         // 退回到本地存储
         this.loadHistoryFromLocal()
       }
+    },
+
+    // 语义搜索
+    async semanticSearch(query, page = 1, limit = 20) {
+      return await this.searchNotes(query, 'semantic', page, limit)
+    },
+
+    // 全文搜索  
+    async fulltextSearch(query, page = 1, limit = 20) {
+      return await this.searchNotes(query, 'fulltext', page, limit)
     }
   }
 })

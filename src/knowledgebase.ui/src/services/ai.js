@@ -34,5 +34,30 @@ export const aiAPI = {
   // 删除AI对话
   deleteConversation: (id) => {
     return apiClient.delete(`/ai/conversations/${id}`)
+  },
+
+  // AI写作改进
+  improveWriting: (data) => {
+    return apiClient.post('/ai/improve-writing', data)
+  },
+
+  // AI内容扩展
+  expandContent: (data) => {
+    return apiClient.post('/ai/expand-content', data)
+  },
+
+  // AI建议大纲
+  suggestOutline: (data) => {
+    return apiClient.post('/ai/suggest-outline', data)
+  },
+
+  // AI语法检查
+  checkGrammar: (data) => {
+    return apiClient.post('/ai/check-grammar', data)
+  },
+
+  // AI回答关于笔记的问题
+  askAboutNote: (data) => {
+    return apiClient.post('/ai/ask-about-note', data)
   }
 }

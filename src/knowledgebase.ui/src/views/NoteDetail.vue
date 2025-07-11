@@ -269,14 +269,12 @@ import LoadingSpinner from '@/components/Common/LoadingSpinner.vue'
 import { formatDate } from '@/utils/date'
 import { getWordCount, getCharacterCount, calculateReadingTime } from '@/utils/text'
 
-// Toast UI Viewer imports
-import Viewer from '@toast-ui/editor/dist/toastui-editor-viewer'
-import '@toast-ui/editor/dist/toastui-editor-viewer.css'
 
 // 代码高亮插件
 import codeSyntaxHighlight from '@toast-ui/editor-plugin-code-syntax-highlight'
 import 'prismjs/themes/prism.css'
 import '@toast-ui/editor-plugin-code-syntax-highlight/dist/toastui-editor-plugin-code-syntax-highlight.css'
+import Editor from '@toast-ui/editor'
 
 const route = useRoute()
 const router = useRouter()
@@ -340,10 +338,11 @@ const initViewer = async () => {
 
   try {
     console.log('Creating new viewer instance...')
-    viewerInstance.value = new Viewer({
+    viewerInstance.value = new Editor.factory({
       el: viewerRef.value,
+      viewer: true,
       initialValue: note.value.content,
-      plugins: [codeSyntaxHighlight]
+      plugins: [codeSyntaxHighlight],
     })
     console.log('Viewer initialized successfully')
   } catch (error) {
@@ -365,7 +364,7 @@ const initAIViewer = async () => {
   await nextTick()
 
   try {
-    aiViewerInstance.value = new Viewer({
+    aiViewerInstance.value = new Editor.factory({
       el: aiResponseRef.value,
       initialValue: aiResponse.value || '',
       plugins: [codeSyntaxHighlight]

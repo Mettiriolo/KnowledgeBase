@@ -70,10 +70,22 @@
       </div>
     </div>
   </div>
+
+  <!-- 删除确认模态框 -->
+  <ConfirmModal
+    v-model:show="showDeleteModal"
+    title="删除笔记"
+    :message="`确定要删除笔记「${note.title}」吗？此操作无法撤销。`"
+    confirm-text="删除"
+    cancel-text="取消"
+    @confirm="confirmDelete"
+    @cancel="cancelDelete"
+  />
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import ConfirmModal from '@/components/Common/ConfirmModal.vue'
 import { truncateText, getWordCount } from '@/utils/text'
 import { formatRelativeTime } from '@/utils/date'
 
@@ -102,12 +114,21 @@ const relativeTime = computed(() => {
   return formatRelativeTime(props.note.updatedAt)
 })
 
+// 删除确认相关
+const showDeleteModal = ref(false)
+
 // 处理删除操作
 const handleDelete = () => {
-  // 可以在这里添加一个确认提示
-  if (confirm(`确定要删除笔记"${props.note.title}"吗？`)) {
-    emit('delete', props.note.id)
-  }
+  showDeleteModal.value = true
+}
+
+const confirmDelete = () => {
+  emit('delete', props.note.id)
+  showDeleteModal.value = false
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
 }
 </script>
 

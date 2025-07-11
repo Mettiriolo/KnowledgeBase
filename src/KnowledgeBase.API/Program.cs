@@ -97,8 +97,8 @@ builder.Services.AddCors(options =>
     // 定义名为 "AllowFrontend" 的 CORS 策略
     options.AddPolicy("AllowFrontend", policy =>
     {
-        // 允许来自 http://localhost:5173 的请求
-        policy.WithOrigins("http://localhost:5173")
+        // 允许来自 http://localhost:3000 的请求
+        policy.WithOrigins("http://localhost:3000")
               // 允许任意请求头
               .AllowAnyHeader()
               // 允许任意请求方法

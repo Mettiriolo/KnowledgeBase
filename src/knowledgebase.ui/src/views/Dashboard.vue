@@ -287,16 +287,21 @@ const recentNotesLoading = ref(false)
 const showAIChat = ref(false)
 const aiQuestion = ref('')
 
-const stats = computed(() => {
-  const today = new Date()
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 10)
+// 缓存日期计算结果
+const todayString = computed(() => new Date().toDateString())
+const weekAgo = computed(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
 
-  const todayNotes = notesStore.notes.filter(note => 
-    new Date(note.createdAt).toDateString() === today.toDateString()
+const stats = computed(() => {
+  const notes = notesStore.notes
+  const todayStr = todayString.value
+  const weekAgoDate = weekAgo.value
+
+  const todayNotes = notes.filter(note => 
+    new Date(note.createdAt).toDateString() === todayStr
   ).length
 
-  const weeklyActive = notesStore.notes.filter(note => 
-    new Date(note.updatedAt) >= weekAgo
+  const weeklyActive = notes.filter(note => 
+    new Date(note.updatedAt) >= weekAgoDate
   ).length
 
   return [
@@ -335,23 +340,29 @@ const stats = computed(() => {
 
 const recentNotes = computed(() => notesStore.recentNotes)
 
+// 优化标签计数算法，使用Map提高性能
 const popularTags = computed(() => {
-  const tagCounts = {}
+  const tagCounts = new Map()
+  const tagsMap = new Map(notesStore.tags.map(tag => [tag.name, tag]))
+  
   notesStore.notes.forEach(note => {
     note.tags?.forEach(tag => {
       if (tag.name) {
-        tagCounts[tag.name] = (tagCounts[tag.name] || 0) + 1
+        tagCounts.set(tag.name, (tagCounts.get(tag.name) || 0) + 1)
       }
     })
   })
   
-  return Object.entries(tagCounts)
-    .map(([name, count]) => ({
-      name,
-      count,
-      color: notesStore.tags.find(t => t.name === name)?.color || '#6B7280',
-      id: notesStore.tags.find(t => t.name === name)?.id
-    }))
+  return Array.from(tagCounts.entries())
+    .map(([name, count]) => {
+      const tagInfo = tagsMap.get(name)
+      return {
+        name,
+        count,
+        color: tagInfo?.color || '#6B7280',
+        id: tagInfo?.id
+      }
+    })
     .sort((a, b) => b.count - a.count)
     .slice(0, 10)
 })

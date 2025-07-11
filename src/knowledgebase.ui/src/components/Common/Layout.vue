@@ -84,7 +84,7 @@
                     <p class="text-sm text-gray-500">{{ authStore.userEmail }}</p>
                   </div>
                   <router-link
-                    to="/profile"
+                    to="/settings"
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     @click="showUserMenu = false"
                   >

@@ -9,6 +9,7 @@ const Notes = () => import('@/views/Notes.vue')
 const NoteDetail = () => import('@/views/NoteDetail.vue')
 const NoteEditor = () => import('@/views/NoteEditor.vue')
 const Search = () => import('@/views/Search.vue')
+const Settings = () => import('@/views/Settings.vue')
 const NotFound = () => import('@/views/NotFound.vue')
 const ForgotPassword = () => import('@/views/ForgotPassword.vue')
 const ResetPassword = () => import('@/views/ResetPassword.vue')
@@ -97,6 +98,15 @@ const routes = [
     meta: {
       requiresAuth: true,
       title: '智能搜索 - AI知识库'
+    }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
+    meta: {
+      requiresAuth: true,
+      title: '个人设置 - AI知识库'
     }
   },
   {

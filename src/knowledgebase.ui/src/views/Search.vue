@@ -272,7 +272,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useNotesStore } from '@/stores/notes'
 import { useSearchStore } from '@/stores/search'
 import { useNotificationStore } from '@/stores/notification'
@@ -299,7 +299,7 @@ const currentPage = ref(1)
 const perPage = 20
 
 // 计算属性
-const searchHistory = computed(() => searchStore.history)
+const searchHistory = computed(() => searchStore.searchHistory)
 const totalResults = computed(() => searchResults.value.length)
 
 const filteredResults = computed(() => {
@@ -409,10 +409,15 @@ const switchToSemantic = () => {
   performSearch()
 }
 
-const highlightText = (text) => {
-  if (!searchQuery.value || searchType.value === 'semantic') return text
+// 缓存正则表达式以提高性能
+const highlightRegex = computed(() => {
+  if (!searchQuery.value || searchType.value === 'semantic') return null
+  return new RegExp(`(${escapeRegExp(searchQuery.value)})`, 'gi')
+})
 
-  const regex = new RegExp(`(${escapeRegExp(searchQuery.value)})`, 'gi')
+const highlightText = (text) => {
+  const regex = highlightRegex.value
+  if (!regex) return text
   return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>')
 }
 
@@ -432,6 +437,12 @@ const getHighlightedExcerpt = (result) => {
 
   return highlightText(excerpt)
 }
+
+// 组件挂载时初始化
+onMounted(() => {
+  // 加载搜索历史
+  searchStore.loadHistoryFromLocal()
+})
 
 // 监听过滤条件变化
 watch([selectedTag, dateRange, sortBy], () => {

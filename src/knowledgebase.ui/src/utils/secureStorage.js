@@ -1,26 +1,77 @@
-import { useStorage } from '@vueuse/core'
-import Cookies from 'js-cookie'
+// 安全存储工具类 - 不依赖外部库
 
 // 安全的存储键名前缀
 const STORAGE_PREFIX = 'kb_secure_'
 const TOKEN_KEY = `${STORAGE_PREFIX}auth_token`
 const REFRESH_TOKEN_KEY = `${STORAGE_PREFIX}refresh_token`
 
-// 使用 httpOnly cookie 存储 token
+// Cookie操作工具函数
+const setCookie = (name, value, options = {}) => {
+  let cookieString = `${name}=${encodeURIComponent(value)}`
+  
+  if (options.expires) {
+    cookieString += `; expires=${options.expires.toUTCString()}`
+  }
+  
+  if (options.maxAge) {
+    cookieString += `; max-age=${options.maxAge}`
+  }
+  
+  if (options.path) {
+    cookieString += `; path=${options.path}`
+  } else {
+    cookieString += `; path=/`
+  }
+  
+  if (options.domain) {
+    cookieString += `; domain=${options.domain}`
+  }
+  
+  if (options.secure) {
+    cookieString += `; secure`
+  }
+  
+  if (options.sameSite) {
+    cookieString += `; samesite=${options.sameSite}`
+  }
+  
+  document.cookie = cookieString
+}
+
+const getCookie = (name) => {
+  const cookies = document.cookie.split(';')
+  for (let cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.trim().split('=')
+    if (cookieName === name) {
+      return decodeURIComponent(cookieValue)
+    }
+  }
+  return null
+}
+
+const removeCookie = (name, options = {}) => {
+  setCookie(name, '', {
+    ...options,
+    expires: new Date(0)
+  })
+}
+
+// 使用 cookie 存储 token
 export const setAuthToken = (token, refreshToken) => {
   const expires = new Date()
   expires.setDate(expires.getDate() + 7) // 7天过期
   
-  Cookies.set(TOKEN_KEY, token, {
+  setCookie(TOKEN_KEY, token, {
     expires,
     sameSite: 'strict',
-    secure: window.location.protocol === 'https:',
-    httpOnly: false // 注意：在客户端无法设置 httpOnly，这需要后端配合设置
+    secure: window.location.protocol === 'https:'
   })
   
   if (refreshToken) {
-    Cookies.set(REFRESH_TOKEN_KEY, refreshToken, {
-      expires: new Date(expires.getTime() + 7 * 24 * 60 * 60 * 1000), // 14天过期
+    const refreshExpires = new Date()
+    refreshExpires.setDate(refreshExpires.getDate() + 14) // 14天过期
+    setCookie(REFRESH_TOKEN_KEY, refreshToken, {
+      expires: refreshExpires,
       sameSite: 'strict',
       secure: window.location.protocol === 'https:'
     })
@@ -28,16 +79,18 @@ export const setAuthToken = (token, refreshToken) => {
 }
 
 export const getAuthToken = () => {
-  return Cookies.get(TOKEN_KEY)
+  return getCookie(TOKEN_KEY) || localStorage.getItem('token')
 }
 
 export const getRefreshToken = () => {
-  return Cookies.get(REFRESH_TOKEN_KEY)
+  return getCookie(REFRESH_TOKEN_KEY)
 }
 
 export const removeAuthTokens = () => {
-  Cookies.remove(TOKEN_KEY)
-  Cookies.remove(REFRESH_TOKEN_KEY)
+  removeCookie(TOKEN_KEY)
+  removeCookie(REFRESH_TOKEN_KEY)
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
 }
 
 // 安全的本地存储封装

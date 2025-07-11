@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick, getCurrentInstance } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useNotesStore } from '@/stores/notes'
 import { useAIStore } from '@/stores/ai'
@@ -189,13 +189,33 @@ const handleEditorBlur = () => {
 // 处理图片上传
 const handleImageUpload = async (file, callback) => {
   try {
-    // 这里添加图片上传逻辑
-    // 上传成功后调用 callback(imageUrl, 'alt text')
-    // 例如: 
-    // const imageUrl = await uploadImage(file)
-    // callback(imageUrl, 'image alt text')
+    // 验证图片文件
+    const { validateImageFile } = await import('@/services/upload')
+    validateImageFile(file)
+    
+    // 显示上传进度
+    const uploadProgress = ref(0)
+    notificationStore.info('正在上传图片...', '请稍候')
+    
+    // 上传图片
+    const { uploadAPI } = await import('@/services/upload')
+    const result = await uploadAPI.uploadImage(file, (progress) => {
+      uploadProgress.value = progress
+    })
+    
+    // 上传成功，调用编辑器回调
+    if (result.success && result.data.url) {
+      const imageUrl = result.data.url
+      const altText = result.data.filename || file.name || 'uploaded image'
+      callback(imageUrl, altText)
+      notificationStore.success('图片上传成功')
+    } else {
+      throw new Error('上传失败：服务器返回异常')
+    }
   } catch (error) {
     notificationStore.error('图片上传失败', error.message)
+    // 调用回调但不传递URL，这样编辑器就不会插入图片
+    callback('', '')
   }
 }
 
@@ -476,6 +496,103 @@ onBeforeRouteLeave((to, from, next) => {
 :deep(.toastui-editor-contents) {
   font-size: 16px;
   line-height: 1.7;
+}
+
+/* 代码块样式修复 */
+:deep(.toastui-editor-contents) {
+  /* 内联代码样式 */
+  code {
+    background-color: #f3f4f6 !important;
+    color: #dc2626 !important;
+    padding: 0.125rem 0.25rem !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.875em !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace !important;
+  }
+
+  /* 代码块样式 */
+  pre {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    padding: 1rem !important;
+    border-radius: 0.375rem !important;
+    overflow-x: auto !important;
+    margin: 1rem 0 !important;
+    
+    code {
+      background-color: transparent !important;
+      color: inherit !important;
+      padding: 0 !important;
+    }
+  }
+
+  /* 语法高亮代码块 */
+  .hljs {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+  }
+
+  /* ToastUI Editor 特有的代码块 */
+  .language-javascript,
+  .language-typescript,
+  .language-html,
+  .language-css,
+  .language-json,
+  .language-markdown,
+  .language-bash,
+  .language-shell,
+  .language-python,
+  .language-java,
+  .language-cpp,
+  .language-c {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    
+    pre {
+      background-color: #1e293b !important;
+      color: #e2e8f0 !important;
+    }
+  }
+}
+
+/* 编辑器预览模式的代码块样式 */
+:deep(.toastui-editor-ww-container) {
+  .toastui-editor-contents {
+    code {
+      background-color: #f3f4f6 !important;
+      color: #dc2626 !important;
+    }
+
+    pre {
+      background-color: #1e293b !important;
+      color: #e2e8f0 !important;
+      
+      code {
+        background-color: transparent !important;
+        color: inherit !important;
+      }
+    }
+  }
+}
+
+/* 编辑器markdown模式的代码块样式 */
+:deep(.toastui-editor-md-container) {
+  .toastui-editor-contents {
+    code {
+      background-color: #f3f4f6 !important;
+      color: #dc2626 !important;
+    }
+
+    pre {
+      background-color: #1e293b !important;
+      color: #e2e8f0 !important;
+      
+      code {
+        background-color: transparent !important;
+        color: inherit !important;
+      }
+    }
+  }
 }
 
 /* 响应式调整 */

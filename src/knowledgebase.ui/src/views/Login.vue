@@ -135,13 +135,6 @@ const form = reactive({
 
 const redirectUrl = computed(() => route.query.redirect || '/dashboard')
 
-// 忘记密码弹窗相关
-const showForgot = ref(false)
-const forgotEmail = ref('')
-const forgotLoading = ref(false)
-const forgotError = ref('')
-const forgotSuccess = ref('')
-
 const toggleMode = () => {
   isLogin.value = !isLogin.value
   error.value = ''
