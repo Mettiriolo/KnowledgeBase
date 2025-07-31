@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace KnowledgeBase.API.Services;
 
@@ -11,6 +12,8 @@ namespace KnowledgeBase.API.Services;
 public class AIService : IAIService
 {
     private readonly HttpClient _httpClient;
+    private readonly IMemoryCache _cache;
+    private readonly IEmbeddingService _embeddingService;
     private readonly string _openAiApiKey;
     private readonly string _openAiApiBaseUrl;
 
@@ -19,24 +22,33 @@ public class AIService : IAIService
     /// </summary>
     /// <param name="httpClient">HTTP客户端</param>
     /// <param name="configuration">配置对象</param>
-    public AIService(HttpClient httpClient, IConfiguration configuration)
+    public AIService(HttpClient httpClient, IConfiguration configuration, IMemoryCache cache, IEmbeddingService embeddingService)
     {
         _httpClient = httpClient;
+        _cache = cache;
+        _embeddingService = embeddingService;
         _openAiApiKey = configuration["OpenAI:ApiKey"]
-?? throw new ArgumentNullException(nameof(configuration), "OpenAI API key is missing in configuration.");
+            ?? throw new ArgumentNullException(nameof(configuration), "OpenAI API key is missing in configuration.");
         _openAiApiBaseUrl = configuration["OpenAI:ApiBaseUrl"]
-        ?? throw new ArgumentNullException(nameof(configuration), "OpenAI API base url is missing in configuration.");
+            ?? throw new ArgumentNullException(nameof(configuration), "OpenAI API base url is missing in configuration.");
         _httpClient.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _openAiApiKey);
     }
 
     /// <summary>
-    /// 生成文本摘要
+    /// 生成文本摘要 - 核心AI功能
     /// </summary>
     /// <param name="content">需要摘要的文本内容</param>
     /// <returns>生成的摘要</returns>
     public async Task<string> GenerateSummaryAsync(string content)
     {
+        // 检查缓存
+        var cacheKey = $"summary_{content.GetHashCode()}";
+        if (_cache.TryGetValue(cacheKey, out string cachedSummary))
+        {
+            return cachedSummary;
+        }
+
         var request = new
         {
             model = "gpt-4",
@@ -63,17 +75,28 @@ public class AIService : IAIService
             { Choices: [{ Message.Content: string cnt }] } => cnt,
             _ => throw new InvalidOperationException("Invalid response received from OpenAI API")
         };
+        
+        // 缓存结果
+        _cache.Set(cacheKey, message, TimeSpan.FromHours(2));
+        
         return message;
     }
 
     /// <summary>
-    /// 基于上下文回答问题
+    /// 基于上下文回答问题 - 核心AI功能
     /// </summary>
     /// <param name="question">用户问题</param>
     /// <param name="context">相关上下文信息</param>
     /// <returns>AI回答</returns>
     public async Task<string> AnswerQuestionAsync(string question, List<string> context)
     {
+        // 检查缓存
+        var cacheKey = $"qa_{question.GetHashCode()}_{string.Join(",", context.Select(c => c.GetHashCode()))}";
+        if (_cache.TryGetValue(cacheKey, out string cachedAnswer))
+        {
+            return cachedAnswer;
+        }
+
         var contextText = string.Join("\n\n", context);
         var prompt = $"Based on the following context, please answer the question. If the answer cannot be found in the context, say so.\n\nContext:\n{contextText}\n\nQuestion: {question}";
 
@@ -103,7 +126,39 @@ public class AIService : IAIService
             { Choices: [{ Message.Content: string cnt }] } => cnt,
             _ => throw new InvalidOperationException("Invalid response received from OpenAI API")
         };
+        
+        // 缓存结果
+        _cache.Set(cacheKey, message, TimeSpan.FromMinutes(30));
+        
         return message;
+    }
+    
+    /// <summary>
+    /// 智能搜索 - 结合语义搜索和AI重排序的核心功能
+    /// </summary>
+    /// <param name="query">搜索查询</param>
+    /// <param name="userId">用户ID</param>
+    /// <param name="limit">返回结果数量</param>
+    /// <returns>搜索结果</returns>
+    public async Task<List<SearchResult>> SmartSearchAsync(string query, int userId, int limit = 10)
+    {
+        // 先获取语义相似的笔记（多取一些用于重排序）
+        var candidateNoteIds = await _embeddingService.SearchSimilarNotesAsync(query, userId, limit * 2);
+        
+        if (!candidateNoteIds.Any())
+        {
+            return new List<SearchResult>();
+        }
+        
+        // TODO: 这里需要从数据库获取笔记内容，暂时返回基本结果
+        var results = candidateNoteIds.Select((noteId, index) => new SearchResult
+        {
+            NoteId = noteId,
+            Score = 1.0f - (index * 0.05f), // 简单的分数递减
+            MatchType = "semantic"
+        }).Take(limit).ToList();
+        
+        return results;
     }
 
     /// <summary>
@@ -213,4 +268,15 @@ public class AIService : IAIService
     {
         public string? Content { get; set; }
     }
+}
+
+/// <summary>
+/// 搜索结果模型
+/// </summary>
+public class SearchResult
+{
+    public int NoteId { get; set; }
+    public float Score { get; set; }
+    public string MatchType { get; set; } = string.Empty;
+    public string? Highlight { get; set; }
 }

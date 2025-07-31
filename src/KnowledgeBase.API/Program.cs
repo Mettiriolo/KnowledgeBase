@@ -30,6 +30,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<KnowledgeBaseDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// 添加内存缓存服务（用于 AI 服务缓存）
+builder.Services.AddMemoryCache();
+
 // 从配置文件中获取 Redis 连接字符串，并配置 Redis 缓存服务
 builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis"));

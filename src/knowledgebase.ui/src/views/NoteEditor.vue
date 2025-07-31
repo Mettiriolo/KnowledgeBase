@@ -1,95 +1,163 @@
 <template>
   <Layout>
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <form @submit.prevent="saveNote" class="space-y-6">
-        <!-- 编辑器头部 -->
-        <div class="flex items-center justify-between">
-          <h1 class="text-2xl font-bold text-gray-900">
-            {{ isEditMode ? '编辑笔记' : '创建新笔记' }}
-          </h1>
-          <div class="flex items-center space-x-3">
-            <button
-              type="button"
-              @click="saveDraft"
-              :disabled="saving"
-              class="inline-flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
-              保存草稿
-            </button>
-            <button
-              type="submit"
-              :disabled="saving || !isValid"
-              class="inline-flex items-center px-4 py-2 text-white bg-primary-600 border border-transparent rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <LoadingSpinner v-if="saving" size="small" color="white" class="mr-2" />
-              {{ isEditMode ? '更新笔记' : '发布笔记' }}
-            </button>
+    <!-- 精简布局 -->
+    <div class="min-h-screen bg-gray-50">
+      <!-- 顶部工具栏 -->
+      <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between h-16">
+            <!-- 左侧 -->
+            <div class="flex items-center space-x-4">
+              <button
+                @click="$router.back()"
+                class="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div class="flex items-center space-x-2">
+                <h1 class="text-lg font-semibold text-gray-900">
+                  {{ isEditMode ? '编辑笔记' : '新笔记' }}
+                </h1>
+                <span v-if="hasUnsavedChanges" class="w-2 h-2 bg-orange-400 rounded-full" title="有未保存的更改"></span>
+              </div>
+            </div>
+            
+            <!-- 右侧 -->
+            <div class="flex items-center space-x-3">
+              <!-- 状态显示 -->
+              <div class="flex items-center space-x-2 text-sm text-gray-500">
+                <span v-if="autoSaveEnabled && lastSaved" class="flex items-center">
+                  <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  已保存
+                </span>
+                <span class="text-gray-300">|</span>
+                <span>{{ wordCount }} 字</span>
+              </div>
+              
+              <!-- 保存按钮 -->
+              <button
+                @click="saveNote"
+                :disabled="saving || !isValid"
+                class="inline-flex items-center px-4 py-2 text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+              >
+                <LoadingSpinner v-if="saving" size="small" color="white" class="mr-2" />
+                <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                {{ saving ? '保存中...' : '保存' }}
+              </button>
+            </div>
           </div>
         </div>
-
-        <!-- 标题输入 -->
-        <div>
-          <input
-            v-model="form.title"
-            type="text"
-            placeholder="输入笔记标题..."
-            class="w-full text-2xl font-semibold border-0 border-b-2 border-gray-200 focus:border-primary-500 focus:ring-0 pb-2 placeholder-gray-400"
-            required
-            autofocus
-          />
-        </div>
-
-        <!-- 标签输入 -->
-        <div>
-          <TagInput
-            v-model="form.tags"
-            placeholder="添加标签（按Enter确认）"
-            :suggestions="notesStore.tags"
-          />
-        </div>
-
-        <!-- Toast UI Editor -->
-        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <div ref="editorRef" class="toast-ui-editor"></div>
-        </div>
-
-        <!-- 底部信息栏 -->
-        <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-between text-sm text-gray-600">
-          <div class="flex items-center space-x-4">
-            <span>{{ wordCount }} 字</span>
-            <span>•</span>
-            <span>{{ characterCount }} 字符</span>
-            <span>•</span>
-            <span>预计阅读时间 {{ readingTime }} 分钟</span>
-          </div>
-          <div class="flex items-center space-x-4">
-            <span v-if="lastSaved">
-              上次保存：{{ formatRelativeTime(lastSaved) }}
-            </span>
-            <span v-if="autoSaveEnabled" class="flex items-center text-green-600">
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              自动保存已开启
-            </span>
-          </div>
-        </div>
-      </form>
-
-      <div class="fixed bottom-6 right-6 z-40">
-        <button
-          @click="showAISuggestions = true"
-          class="p-4 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 transition-colors group"
-          title="AI写作建议"
-        >
-          <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-        </button>
       </div>
+      
+      <!-- 编辑区域 -->
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <form @submit.prevent="saveNote" class="space-y-4">
+
+          <!-- 标题输入 -->
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <input
+              v-model="form.title"
+              type="text"
+              placeholder="笔记标题..."
+              class="w-full text-2xl font-bold border-0 focus:ring-0 p-0 placeholder-gray-400 bg-transparent"
+              required
+              autofocus
+            />
+            
+            <!-- 标签输入 -->
+            <div class="mt-4 pt-4 border-t border-gray-100">
+              <TagInput
+                v-model="form.tags"
+                placeholder="添加标签..."
+                :suggestions="notesStore.tags"
+                class="border-0 focus:ring-0 p-0 bg-transparent"
+              />
+            </div>
+          </div>
+
+          <!-- 编辑器 -->
+          <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div ref="editorRef" class="toast-ui-editor min-h-96"></div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- AI助手按钮 - 简化后 -->
+      <div class="fixed bottom-8 right-8 z-40">
+        <div class="flex flex-col space-y-3">
+          <!-- AI摘要 -->
+          <button
+            v-if="form.content.trim().length > 100"
+            @click="generateSummary"
+            :disabled="aiStore.isThinking"
+            class="p-3 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition-all group"
+            title="生成摘要"
+          >
+            <LoadingSpinner v-if="aiStore.isThinking" size="small" color="white" />
+            <svg v-else class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </button>
+          
+          <!-- AI问答 -->
+          <button
+            @click="showAIChat = true"
+            class="p-3 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 transition-all group"
+            title="AI问答"
+          >
+            <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- AI对话模态框 - 精简版 -->
+      <teleport to="body">
+        <div v-if="showAIChat" class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50" @click.self="showAIChat = false">
+          <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-96 sm:max-h-80 overflow-hidden animate-slide-up">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 class="font-semibold text-gray-900">AI助手</h3>
+              <button @click="showAIChat = false" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div class="p-4 space-y-4">
+              <div v-if="aiStore.lastResponse" class="bg-gray-50 p-3 rounded-lg text-sm">
+                <p class="text-gray-700 whitespace-pre-wrap">{{ aiStore.lastResponse.answer }}</p>
+              </div>
+              
+              <div class="flex space-x-2">
+                <input
+                  v-model="aiQuestion"
+                  @keyup.enter="askAI"
+                  placeholder="问问关于这篇笔记的问题..."
+                  class="flex-1 text-sm border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                  :disabled="aiStore.isThinking"
+                />
+                <button
+                  @click="askAI"
+                  :disabled="!aiQuestion.trim() || aiStore.isThinking"
+                  class="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm"
+                >
+                  <LoadingSpinner v-if="aiStore.isThinking" size="small" color="white" />
+                  <span v-else>发送</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </teleport>
     </div>
 
   </Layout>
@@ -129,10 +197,9 @@ const editorInstance = ref(null)
 const saving = ref(false)
 const autoSaveEnabled = ref(true)
 const lastSaved = ref(null)
-const showAISuggestions = ref(false)
+const showAIChat = ref(false)
+const aiQuestion = ref('')
 const showLeaveConfirm = ref(false)
-const aiSuggestion = ref('')
-const canApplySuggestion = ref(false)
 const hasUnsavedChanges = ref(false)
 const leaveCallback = ref(null)
 
@@ -225,6 +292,30 @@ const autoSave = debounce(async () => {
     await saveDraft()
   }
 }, 3000)
+
+// AI功能
+const generateSummary = async () => {
+  if (!form.content.trim()) return
+  
+  try {
+    const summary = await aiStore.generateSummary(form.content)
+    notificationStore.success('摘要已生成', summary)
+  } catch (error) {
+    notificationStore.error('生成摘要失败', error.message)
+  }
+}
+
+const askAI = async () => {
+  if (!aiQuestion.value.trim()) return
+  
+  try {
+    const context = [form.content]
+    await aiStore.askQuestion(aiQuestion.value, context)
+    aiQuestion.value = ''
+  } catch (error) {
+    notificationStore.error('AI问答失败', error.message)
+  }
+}
 
 // 初始化编辑器
 const initEditor = () => {

@@ -3,6 +3,7 @@ using Qdrant.Client.Grpc;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace KnowledgeBase.API.Services;
 
@@ -14,18 +15,21 @@ public class EmbeddingService : IEmbeddingService
 {
     private readonly HttpClient _httpClient; // 用于调用 OpenAI 接口
     private readonly QdrantClient _qdrantClient; // Qdrant 客户端
+    private readonly IMemoryCache _cache; // 缓存服务
     private readonly string _openAiApiKey; // OpenAI API 密钥
     private readonly string _openAiApiBaseUrl; // OpenAI API 基础 URL
     private readonly string _collectionName = "knowledge_base"; // 向量集合名称
+    private const int MAX_TOKENS_PER_CHUNK = 7000; // 每个分块的最大token数
 
     /// <summary>
     /// 构造函数，初始化 HttpClient、QdrantClient，并自动创建集合（如不存在）
     /// </summary>
     /// <param name="httpClient">HTTP客户端</param>
     /// <param name="configuration">配置对象</param>
-    public EmbeddingService(HttpClient httpClient, IConfiguration configuration)
+    public EmbeddingService(HttpClient httpClient, IConfiguration configuration, IMemoryCache cache)
     {
         _httpClient = httpClient;
+        _cache = cache;
         _openAiApiKey = configuration["OpenAI:ApiKey"]
             ?? throw new ArgumentNullException(nameof(configuration), "OpenAI API key is missing in configuration.");
         _openAiApiBaseUrl = configuration["OpenAI:ApiBaseUrl"]
@@ -47,6 +51,13 @@ public class EmbeddingService : IEmbeddingService
     /// <returns>向量嵌入数组</returns>
     public async Task<float[]> GenerateEmbeddingAsync(string text)
     {
+        // 检查缓存
+        var cacheKey = $"embedding_{text.GetHashCode()}";
+        if (_cache.TryGetValue(cacheKey, out float[] cachedEmbedding))
+        {
+            return cachedEmbedding;
+        }
+
         var request = new
         {
             input = text,
@@ -70,6 +81,10 @@ public class EmbeddingService : IEmbeddingService
             { Data: [{ Embedding: var emb }] } when emb is not null && emb.Length > 0 => emb,
             _ => throw new InvalidOperationException("Failed to retrieve embedding from OpenAI response.")
         };
+        
+        // 缓存结果
+        _cache.Set(cacheKey, embedding, TimeSpan.FromHours(24));
+        
         return embedding;
     }
 
@@ -120,7 +135,20 @@ public class EmbeddingService : IEmbeddingService
     /// </summary>
     /// <param name="noteId">笔记ID</param>
     /// <param name="content">笔记内容</param>
-    public async Task IndexNoteAsync(int userId,int noteId, string content)
+    public async Task IndexNoteAsync(int userId, int noteId, string content)
+    {
+        // 如果内容太长，进行分块处理
+        if (EstimateTokenCount(content) > MAX_TOKENS_PER_CHUNK)
+        {
+            await IndexNoteWithChunksAsync(userId, noteId, content);
+        }
+        else
+        {
+            await IndexSingleNoteAsync(userId, noteId, content);
+        }
+    }
+    
+    private async Task IndexSingleNoteAsync(int userId, int noteId, string content)
     {
         var embedding = await GenerateEmbeddingAsync(content);
 
@@ -135,8 +163,42 @@ public class EmbeddingService : IEmbeddingService
         point.Payload.Add("note_id", new Value { IntegerValue = noteId });
         point.Payload.Add("user_id", new Value { IntegerValue = userId });
         point.Payload.Add("content", new Value { StringValue = content });
+        point.Payload.Add("chunk_index", new Value { IntegerValue = 0 });
+        point.Payload.Add("total_chunks", new Value { IntegerValue = 1 });
 
         await _qdrantClient.UpsertAsync(_collectionName, [point]);
+    }
+    
+    private async Task IndexNoteWithChunksAsync(int userId, int noteId, string content)
+    {
+        var chunks = SplitTextIntoChunks(content);
+        var points = new List<PointStruct>();
+        
+        for (int i = 0; i < chunks.Count; i++)
+        {
+            var embedding = await GenerateEmbeddingAsync(chunks[i]);
+            
+            // 使用组合ID：noteId * 1000 + chunkIndex
+            var pointId = (ulong)(noteId * 1000 + i);
+            
+            var point = new PointStruct
+            {
+                Id = new PointId { Num = pointId },
+                Vectors = new Vectors
+                {
+                    Vector = new Vector { Data = { embedding } }
+                }
+            };
+            point.Payload.Add("note_id", new Value { IntegerValue = noteId });
+            point.Payload.Add("user_id", new Value { IntegerValue = userId });
+            point.Payload.Add("content", new Value { StringValue = chunks[i] });
+            point.Payload.Add("chunk_index", new Value { IntegerValue = i });
+            point.Payload.Add("total_chunks", new Value { IntegerValue = chunks.Count });
+            
+            points.Add(point);
+        }
+        
+        await _qdrantClient.UpsertAsync(_collectionName, points);
     }
 
     /// <summary>
@@ -150,7 +212,27 @@ public class EmbeddingService : IEmbeddingService
     /// 删除指定笔记在 Qdrant 中的向量索引
     /// </summary>
     /// <param name="noteId">笔记ID</param>
-    public Task DeleteNoteIndexAsync(int noteId) => _qdrantClient.DeleteAsync(_collectionName, [(ulong)noteId]);
+    public async Task DeleteNoteIndexAsync(int noteId)
+    {
+        // 删除主要的点
+        await _qdrantClient.DeleteAsync(_collectionName, [(ulong)noteId]);
+        
+        // 删除分块的点 (noteId * 1000 到 noteId * 1000 + 999)
+        var chunkIds = new List<ulong>();
+        for (int i = 0; i < 1000; i++)
+        {
+            chunkIds.Add((ulong)(noteId * 1000 + i));
+        }
+        
+        try
+        {
+            await _qdrantClient.DeleteAsync(_collectionName, chunkIds);
+        }
+        catch
+        {
+            // 忽略删除不存在的分块时的错误
+        }
+    }
 
     /// <summary>
     /// 初始化 Qdrant 向量集合（如不存在则创建）
@@ -174,6 +256,112 @@ public class EmbeddingService : IEmbeddingService
             await _qdrantClient.CreateCollectionAsync(_collectionName, vectorParams);
             await _qdrantClient.CreatePayloadIndexAsync(_collectionName, "user_id", PayloadSchemaType.Integer);
         }
+    }
+    
+    /// <summary>
+    /// 将长文本分割成多个chunks
+    /// </summary>
+    /// <param name="text">原始文本</param>
+    /// <returns>分割后的文本块列表</returns>
+    private List<string> SplitTextIntoChunks(string text)
+    {
+        var chunks = new List<string>();
+        
+        // 首先按段落分割
+        var paragraphs = text.Split(new[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+        var currentChunk = new StringBuilder();
+        
+        foreach (var paragraph in paragraphs)
+        {
+            // 估算当前chunk加上新段落的token数
+            var estimatedTokens = EstimateTokenCount(currentChunk.ToString() + "\n\n" + paragraph);
+            
+            if (estimatedTokens > MAX_TOKENS_PER_CHUNK && currentChunk.Length > 0)
+            {
+                // 当前chunk已满，保存并开始新的chunk
+                chunks.Add(currentChunk.ToString().Trim());
+                currentChunk.Clear();
+            }
+            
+            if (currentChunk.Length > 0)
+            {
+                currentChunk.AppendLine();
+                currentChunk.AppendLine();
+            }
+            currentChunk.Append(paragraph);
+            
+            // 如果单个段落就超过限制，需要进一步分割
+            if (EstimateTokenCount(paragraph) > MAX_TOKENS_PER_CHUNK)
+            {
+                chunks.AddRange(SplitLongParagraph(paragraph));
+                currentChunk.Clear();
+            }
+        }
+        
+        // 添加最后一个chunk
+        if (currentChunk.Length > 0)
+        {
+            chunks.Add(currentChunk.ToString().Trim());
+        }
+        
+        return chunks.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
+    }
+    
+    /// <summary>
+    /// 分割过长的段落
+    /// </summary>
+    /// <param name="paragraph">段落文本</param>
+    /// <returns>分割后的文本块</returns>
+    private List<string> SplitLongParagraph(string paragraph)
+    {
+        var chunks = new List<string>();
+        var sentences = paragraph.Split(new[] { '。', '！', '？', '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
+        var currentChunk = new StringBuilder();
+        
+        foreach (var sentence in sentences)
+        {
+            var trimmedSentence = sentence.Trim();
+            if (string.IsNullOrEmpty(trimmedSentence)) continue;
+            
+            var estimatedTokens = EstimateTokenCount(currentChunk.ToString() + trimmedSentence);
+            
+            if (estimatedTokens > MAX_TOKENS_PER_CHUNK && currentChunk.Length > 0)
+            {
+                chunks.Add(currentChunk.ToString().Trim());
+                currentChunk.Clear();
+            }
+            
+            if (currentChunk.Length > 0)
+            {
+                currentChunk.Append(" ");
+            }
+            currentChunk.Append(trimmedSentence);
+        }
+        
+        if (currentChunk.Length > 0)
+        {
+            chunks.Add(currentChunk.ToString().Trim());
+        }
+        
+        return chunks;
+    }
+    
+    /// <summary>
+    /// 估算文本的token数量（粗略估算，中文按字符数*1.5，英文按单词数*1.3）
+    /// </summary>
+    /// <param name="text">文本内容</param>
+    /// <returns>估算的token数</returns>
+    private int EstimateTokenCount(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return 0;
+        
+        // 统计中文字符数
+        var chineseCharCount = text.Count(c => c >= 0x4e00 && c <= 0x9fff);
+        // 统计英文单词数（简单按空格分割）
+        var englishWordCount = text.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length - chineseCharCount;
+        
+        // 粗略估算：中文字符 * 1.5 + 英文单词 * 1.3
+        return (int)(chineseCharCount * 1.5 + englishWordCount * 1.3);
     }
 
     /// <summary>

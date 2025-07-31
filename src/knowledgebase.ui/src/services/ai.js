@@ -1,62 +1,46 @@
 import apiClient from './api'
 
+// AI服务配置
+const AI_CONFIG = {
+  // 缓存设置
+  CACHE_DURATION: 30 * 60 * 1000, // 30分钟
+  // 搜索设置
+  DEFAULT_SEARCH_LIMIT: 10,
+  MAX_SEARCH_LIMIT: 50
+}
+
+// 精简版AI服务 - 只保留核心功能
 export const aiAPI = {
-  // AI问答
+  // 核心功能1: AI问答 - 基于上下文回答问题
   ask: (data) => {
     return apiClient.post('/ai/ask', data)
   },
 
-  // AI生成摘要
+  // 核心功能2: AI生成摘要
   summarize: (data) => {
     return apiClient.post('/ai/summarize', data)
   },
 
-  // AI提取关键词
-  extractKeywords: (data) => {
-    return apiClient.post('/ai/keywords', data)
+  // 核心功能3: 智能搜索 - 结合语义搜索和AI重排序
+  smartSearch: (query, options = {}) => {
+    return apiClient.post('/ai/smart-search', {
+      query,
+      limit: options.limit || 10,
+      ...options
+    })
   },
 
-  // AI生成标签
-  generateTags: (data) => {
-    return apiClient.post('/ai/tags', data)
+  // 流式回答 - 实时AI对话体验
+  streamAnswer: (question, context) => {
+    return apiClient.post('/ai/stream-answer', {
+      question,
+      context
+    }, {
+      responseType: 'stream'
+    })
   },
 
-  // AI内容优化建议
-  suggestImprovements: (data) => {
-    return apiClient.post('/ai/improve', data)
-  },
-
-  // 获取AI对话历史
-  getConversations: () => {
-    return apiClient.get('/ai/conversations')
-  },
-
-  // 删除AI对话
-  deleteConversation: (id) => {
-    return apiClient.delete(`/ai/conversations/${id}`)
-  },
-
-  // AI写作改进
-  improveWriting: (data) => {
-    return apiClient.post('/ai/improve-writing', data)
-  },
-
-  // AI内容扩展
-  expandContent: (data) => {
-    return apiClient.post('/ai/expand-content', data)
-  },
-
-  // AI建议大纲
-  suggestOutline: (data) => {
-    return apiClient.post('/ai/suggest-outline', data)
-  },
-
-  // AI语法检查
-  checkGrammar: (data) => {
-    return apiClient.post('/ai/check-grammar', data)
-  },
-
-  // AI回答关于笔记的问题
+  // 关于笔记的智能问答
   askAboutNote: (data) => {
     return apiClient.post('/ai/ask-about-note', data)
   }
