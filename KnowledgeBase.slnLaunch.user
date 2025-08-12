@@ -5,11 +5,11 @@
       {
         "Path": "src\\KnowledgeBase.API\\KnowledgeBase.API.csproj",
         "Action": "Start",
-        "DebugTarget": "https"
+        "DebugTarget": "http"
       },
       {
         "Path": "src\\Knowledgebase.UI\\knowledgebase.ui.esproj",
-        "Action": "Start"
+        "Action": "StartWithoutDebugging"
       }
     ]
   }

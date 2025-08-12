@@ -1,90 +1,126 @@
 <template>
   <Layout>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- 页面头部 -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900">我的笔记</h1>
-            <p class="text-gray-600 mt-2">
-              共 {{ notesStore.totalNotes }} 篇笔记
-              <span v-if="selectedTag" class="ml-2">
-                · 标签筛选:
-                <span
-                  :style="{ backgroundColor: selectedTagObject?.color + '20', color: selectedTagObject?.color }"
-                  class="px-2 py-1 rounded-full text-sm font-medium"
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 页面头部 - 重新设计 -->
+        <div class="mb-10">
+          <div class="bg-white/60 backdrop-blur-sm rounded-3xl p-8 border border-white/50 shadow-lg">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+              <div class="mb-6 lg:mb-0">
+                <div class="flex items-center mb-4">
+                  <div class="p-3 bg-gradient-to-r from-primary-500 to-purple-500 rounded-2xl mr-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 class="text-4xl font-bold bg-gradient-to-r from-gray-900 via-primary-600 to-purple-600 bg-clip-text text-transparent">
+                      我的笔记
+                    </h1>
+                    <p class="text-lg text-gray-600 mt-2">
+                      共 {{ notesStore.totalNotes }} 篇精彩内容
+                      <span v-if="selectedTag" class="ml-3">
+                        · 筛选:
+                        <span
+                          :style="{ backgroundColor: selectedTagObject?.color + '15', color: selectedTagObject?.color, borderColor: selectedTagObject?.color + '30' }"
+                          class="ml-2 px-3 py-1.5 rounded-full text-sm font-semibold border"
+                        >
+                          {{ selectedTag }}
+                        </span>
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-4">
+                <router-link 
+                  to="/notes/create" 
+                  class="group relative inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-purple-500 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
                 >
-                  {{ selectedTag }}
-                </span>
-              </span>
-            </p>
-          </div>
-          <router-link 
-            to="/notes/create" 
-            class="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            新建笔记
-          </router-link>
-        </div>
-      </div>
-
-      <div class="flex gap-8">
-        <!-- 左侧过滤栏 -->
-        <div class="w-64 flex-shrink-0">
-          <!-- 搜索框 -->
-          <div class="mb-6">
-            <input
-              v-model="searchQuery"
-              @input="debouncedSearch"
-              placeholder="搜索笔记..."
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-
-          <!-- 标签过滤 -->
-          <div class="bg-white rounded-lg shadow p-4 mb-6">
-            <h3 class="font-semibold text-gray-900 mb-3">标签过滤</h3>
-            <div class="space-y-2">
-              <label
-                v-for="tag in notesStore.tags"
-                :key="tag.id"
-                class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded-lg"
-              >
-                <input
-                  type="checkbox"
-                  :value="tag.name"
-                  v-model="selectedTags"
-                  class="text-primary-600 rounded focus:ring-primary-500"
-                />
-                <span
-                  :style="{ color: tag.color }"
-                  class="ml-2 text-sm font-medium"
-                >
-                  {{ tag.name }}
-                </span>
-                <span class="ml-auto text-xs text-gray-500">
-                  {{ tag.count || 0 }}
-                </span>
-              </label>
+                  <div class="absolute inset-0 bg-gradient-to-r from-primary-600 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div class="relative flex items-center">
+                    <div class="p-1 bg-white/20 rounded-lg mr-3 group-hover:scale-110 transition-transform">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    创建笔记
+                  </div>
+                </router-link>
+              </div>
             </div>
           </div>
-
-          <!-- 排序选项 -->
-          <div class="bg-white rounded-lg shadow p-4">
-            <h3 class="font-semibold text-gray-900 mb-3">排序方式</h3>
-            <select 
-              v-model="sortBy" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="updatedAt">最近更新</option>
-              <option value="createdAt">创建时间</option>
-              <option value="title">标题排序</option>
-            </select>
-          </div>
         </div>
+
+        <div class="flex gap-8">
+          <!-- 左侧过滤栏 - 美化 -->
+          <div class="w-64 flex-shrink-0 space-y-6">
+            <!-- 搜索框 -->
+            <div class="relative">
+              <input
+                v-model="searchQuery"
+                @input="debouncedSearch"
+                placeholder="搜索笔记..."
+                class="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-sm border border-white/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-all shadow-lg"
+              />
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- 标签过滤 -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/60">
+              <h3 class="font-bold text-gray-900 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                标签筛选
+              </h3>
+              <div class="space-y-3">
+                <label
+                  v-for="tag in notesStore.tags"
+                  :key="tag.id"
+                  class="group flex items-center cursor-pointer hover:bg-gradient-to-r hover:from-primary-50 hover:to-purple-50 p-3 rounded-xl transition-all duration-200"
+                >
+                  <input
+                    type="checkbox"
+                    :value="tag.name"
+                    v-model="selectedTags"
+                    class="text-primary-600 rounded-md focus:ring-primary-500 focus:ring-offset-0"
+                  />
+                  <span
+                    :style="{ color: tag.color }"
+                    class="ml-3 text-sm font-semibold group-hover:scale-105 transition-transform"
+                  >
+                    {{ tag.name }}
+                  </span>
+                  <span class="ml-auto text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full group-hover:bg-white transition-colors">
+                    {{ tag.count || 0 }}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 排序选项 -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/60">
+              <h3 class="font-bold text-gray-900 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                </svg>
+                排序方式
+              </h3>
+              <select 
+                v-model="sortBy" 
+                class="w-full px-4 py-3 bg-white/90 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+              >
+                <option value="updatedAt">🕒 最近更新</option>
+                <option value="createdAt">📅 创建时间</option>
+                <option value="title">🔤 标题排序</option>
+              </select>
+            </div>
+          </div>
 
         <!-- 笔记列表 -->
         <div class="flex-1">
@@ -136,20 +172,20 @@
             </div>
           </div>
 
-          <!-- 笔记网格 -->
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- 笔记列表 -->
+          <div v-else class="space-y-4">
             <div
               v-for="note in paginatedNotes"
               :key="note.id"
               class="relative"
             >
               <!-- 选择框 -->
-              <div class="absolute top-2 left-2 z-10">
+              <div class="absolute top-4 left-4 z-20">
                 <input
                   type="checkbox"
                   :value="note.id"
                   v-model="selectedNotes"
-                  class="h-4 w-4 text-primary-600 rounded focus:ring-primary-500"
+                  class="h-5 w-5 text-primary-600 rounded-md focus:ring-primary-500 bg-white/80 backdrop-blur-sm"
                   @click.stop
                 />
               </div>
@@ -196,7 +232,7 @@
         </div>
       </div>
     </div>
-
+    </div>
     <!-- 删除确认对话框 -->
     <teleport to="body">
       <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 overflow-y-auto">
@@ -259,7 +295,7 @@ const searchQuery = ref('')
 const selectedTags = ref([])
 const sortBy = ref('updatedAt')
 const currentPage = ref(1)
-const perPage = 9
+const perPage = 15
 const selectedNotes = ref([])
 const showDeleteConfirm = ref(false)
 const deleteTarget = ref({})
@@ -386,11 +422,9 @@ const confirmDelete = async () => {
   try {
     if (deleteTarget.value.batch) {
       await notesStore.batchDeleteNotes(selectedNotes.value)
-      notificationStore.success('批量删除成功', `已删除 ${selectedNotes.value.length} 篇笔记`)
       selectedNotes.value = []
     } else {
-      await notesStore.deleteNote(deleteTarget.value.id)
-      notificationStore.success('删除成功')
+      await notesStore.deleteNote(deleteTarget.value.id, true)
     }
 
     closeDeleteConfirm()
@@ -400,7 +434,8 @@ const confirmDelete = async () => {
       currentPage.value--
     }
   } catch (error) {
-    notificationStore.error('删除失败', error.message)
+    // Store methods handle their own error notifications, so we don't need to duplicate
+    console.error('Delete failed:', error)
   }
 }
 

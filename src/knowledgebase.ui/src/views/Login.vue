@@ -188,10 +188,8 @@ const handleSubmit = async () => {
   try {
     if (isLogin.value) {
       await authStore.login(form.email, form.password)
-      notificationStore.success('登录成功', '欢迎回来！')
     } else {
       await authStore.register(form.username, form.email, form.password)
-      notificationStore.success('注册成功', '欢迎加入AI知识库！')
     }
     router.push(redirectUrl.value)
   } catch (err) {
@@ -206,7 +204,6 @@ const loginDemo = async () => {
   error.value = ''
   try {
     await authStore.login('demo@example.com', 'demo123')
-    notificationStore.success('演示登录成功')
     router.push(redirectUrl.value)
   } catch (error) {
     error.value = '演示登录失败，请稍后重试'

@@ -10,6 +10,8 @@ public class CreateNoteDto
     public required  string Content { get; set; }
 
     public List<string> Tags { get; set; } = new List<string>();
+    
+    public bool IsDraft { get; set; } = false;
 }
 
 public class UpdateNoteDto
@@ -19,6 +21,8 @@ public class UpdateNoteDto
     public required  string Content { get; set; }
 
     public List<string> Tags { get; set; } = new List<string>();
+    
+    public bool IsDraft { get; set; } = false;
 }
 
 public class NoteDto
@@ -30,6 +34,7 @@ public class NoteDto
     public List<TagDto> Tags { get; set; } = [];
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public bool IsDraft { get; set; } = false;
 }
 
 public class TagDto

@@ -12,7 +12,20 @@ export const useNotificationStore = defineStore('notification', {
   },
 
   actions: {
-    add(notification) {
+    add(notification, preventDuplicate = false) {
+      // 防重复逻辑
+      if (preventDuplicate) {
+        const existing = this.notifications.find(n => 
+          !n.dismissed && 
+          n.title === notification.title && 
+          n.message === notification.message &&
+          n.type === notification.type
+        )
+        if (existing) {
+          return existing.id
+        }
+      }
+
       const id = this.nextId++
       const newNotification = {
         id,
@@ -57,41 +70,45 @@ export const useNotificationStore = defineStore('notification', {
     },
 
     success(title, message = '', options = {}) {
+      const { preventDuplicate = true, ...otherOptions } = options
       return this.add({
         type: 'success',
         title,
         message,
-        ...options
-      })
+        ...otherOptions
+      }, preventDuplicate)
     },
 
     error(title, message = '', options = {}) {
+      const { preventDuplicate = true, ...otherOptions } = options
       return this.add({
         type: 'error',
         title,
         message,
         duration: 8000,
-        ...options
-      })
+        ...otherOptions
+      }, preventDuplicate)
     },
 
     warning(title, message = '', options = {}) {
+      const { preventDuplicate = true, ...otherOptions } = options
       return this.add({
         type: 'warning',
         title,
         message,
         duration: 6000,
-        ...options
-      })
+        ...otherOptions
+      }, preventDuplicate)
     },
 
     info(title, message = '', options = {}) {
+      const { preventDuplicate = true, ...otherOptions } = options
       return this.add({
         type: 'info',
         title,
         message,
-        ...options
-      })
+        ...otherOptions
+      }, preventDuplicate)
     }
   }
 })

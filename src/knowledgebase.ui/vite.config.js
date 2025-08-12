@@ -70,7 +70,7 @@ export default defineConfig({
     cssCodeSplit: true
   },
   server: {
-    host: '0.0.0.0',
+    host: 'localhost',
     port: 3000,
     strictPort: true,
     cors: true

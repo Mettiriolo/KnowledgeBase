@@ -1,38 +1,61 @@
 <template>
   <Layout>
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- 简化后的统一搜索界面 -->
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">智能搜索</h1>
-        <p class="text-gray-600">让AI帮您找到所需的内容</p>
-      </div>
-
-      <!-- 统一搜索输入框 -->
-      <div class="mb-8">
-        <div class="relative max-w-2xl mx-auto">
-          <input
-            v-model="searchQuery"
-            @input="debouncedSmartSearch"
-            @keyup.enter="performSmartSearch"
-            type="text"
-            placeholder="请描述您要找的内容，支持自然语言..."
-            class="w-full pl-12 pr-16 py-4 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm"
-          />
-          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <svg class="h-6 w-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <div class="absolute inset-y-0 right-0 pr-4 flex items-center">
-            <span v-if="isSmartSearch" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- 搜索头部 - 重新设计 -->
+        <div class="text-center mb-12">
+          <div class="mb-8">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl mb-6 shadow-xl">
+              <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              AI搜索
-            </span>
+            </div>
+            <h1 class="text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+              智能搜索
+            </h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+              让AI理解您的意图，用自然语言找到您需要的内容
+            </p>
           </div>
         </div>
-      </div>
+
+        <!-- 搜索框 - 全新设计 -->
+        <div class="mb-12">
+          <div class="relative max-w-4xl mx-auto">
+            <div class="relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+              <input
+                v-model="searchQuery"
+                @input="debouncedSmartSearch"
+                @keyup.enter="performSmartSearch"
+                type="text"
+                placeholder="试试「上周的会议记录」或「关于JavaScript的学习笔记」..."
+                class="w-full pl-16 pr-32 py-6 text-lg bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-gray-500"
+              />
+              <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                <div class="p-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl">
+                  <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div class="absolute inset-y-0 right-0 pr-6 flex items-center space-x-3">
+                <div v-if="isSmartSearch" class="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-semibold bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800 border border-purple-200">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  AI智能搜索
+                </div>
+                <button 
+                  @click="performSmartSearch"
+                  :disabled="!searchQuery.trim()"
+                  class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-2xl hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  搜索
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
       <!-- 简化的过滤选项 - 只在有搜索结果时显示 -->
       <div v-if="searched && searchResults.length > 0" class="mb-6">
@@ -362,6 +385,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </Layout>
 </template>

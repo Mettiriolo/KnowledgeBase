@@ -63,31 +63,48 @@ public class NotesService(KnowledgeBaseDbContext context, IEmbeddingService embe
     /// <returns>创建的笔记</returns>
     public async Task<NoteDto> CreateNoteAsync(CreateNoteDto createNoteDto, int userId)
     {
-        var note = new Note
+        using var transaction = await context.Database.BeginTransactionAsync();
+        try
         {
-            Title = createNoteDto.Title,
-            Content = createNoteDto.Content,
-            UserId = userId,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            var note = new Note
+            {
+                Title = createNoteDto.Title,
+                Content = createNoteDto.Content,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDraft = createNoteDto.IsDraft
+            };
 
-        context.Notes.Add(note);
-        await context.SaveChangesAsync();
+            context.Notes.Add(note);
+            await context.SaveChangesAsync();
 
-        // 添加标签
-        await AddTagsToNoteAsync(note.Id, createNoteDto.Tags);
+            // 添加标签
+            await AddTagsToNoteAsync(note.Id, createNoteDto.Tags);
 
-        // 生成并存储向量索引
-        await embeddingService.IndexNoteAsync(note.Id, note.UserId, $"{note.Title} {note.Content}");
+            // 只有非草稿状态才生成并存储向量索引
+            if (!note.IsDraft)
+            {
+                await embeddingService.IndexNoteAsync(userId, note.Id, $"{note.Title} {note.Content}");
+            }
 
-        // 重新加载包含标签的笔记
-        var createdNote = await context.Notes
-            .Include(n => n.NoteTags)
-            .ThenInclude(nt => nt.Tag)
-            .FirstAsync(n => n.Id == note.Id);
+            // 提交事务
+            await transaction.CommitAsync();
 
-        return MapToDto(createdNote);
+            // 重新加载包含标签的笔记
+            var createdNote = await context.Notes
+                .Include(n => n.NoteTags)
+                .ThenInclude(nt => nt.Tag)
+                .FirstAsync(n => n.Id == note.Id);
+
+            return MapToDto(createdNote);
+        }
+        catch
+        {
+            // 回滚事务
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     /// <summary>
@@ -105,28 +122,63 @@ public class NotesService(KnowledgeBaseDbContext context, IEmbeddingService embe
 
         if (note == null) return null;
 
-        note.Title = updateNoteDto.Title;
-        note.Content = updateNoteDto.Content;
-        note.UpdatedAt = DateTime.UtcNow;
+        using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            // 记录原始状态
+            var wasPublished = !note.IsDraft;
+            
+            // 更新笔记属性
+            note.Title = updateNoteDto.Title;
+            note.Content = updateNoteDto.Content;
+            note.UpdatedAt = DateTime.UtcNow;
+            note.IsDraft = updateNoteDto.IsDraft;
 
-        // 移除现有标签
-        context.NoteTags.RemoveRange(note.NoteTags);
+            // 移除现有标签
+            context.NoteTags.RemoveRange(note.NoteTags);
 
-        await context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
-        // 添加新标签
-        await AddTagsToNoteAsync(note.Id, updateNoteDto.Tags);
+            // 添加新标签
+            await AddTagsToNoteAsync(note.Id, updateNoteDto.Tags);
 
-        // 更新向量索引
-        await embeddingService.UpdateNoteIndexAsync(note.UserId, note.Id, $"{note.Title} {note.Content}");
+            // 处理向量索引更新
+            var nowPublished = !updateNoteDto.IsDraft;
+            
+            if (wasPublished && nowPublished)
+            {
+                // 更新已发布笔记的向量索引
+                await embeddingService.UpdateNoteIndexAsync(note.UserId, note.Id, $"{note.Title} {note.Content}");
+            }
+            else if (!wasPublished && nowPublished)
+            {
+                // 草稿转为发布状态，创建向量索引
+                await embeddingService.IndexNoteAsync(note.UserId, note.Id, $"{note.Title} {note.Content}");
+            }
+            else if (wasPublished && !nowPublished)
+            {
+                // 发布状态转为草稿，删除向量索引
+                await embeddingService.DeleteNoteIndexAsync(note.Id);
+            }
+            // 草稿状态保持草稿状态，无需处理向量索引
 
-        // 重新加载包含标签的笔记
-        var updatedNote = await context.Notes
-            .Include(n => n.NoteTags)
-            .ThenInclude(nt => nt.Tag)
-            .FirstAsync(n => n.Id == note.Id);
+            // 提交事务
+            await transaction.CommitAsync();
 
-        return MapToDto(updatedNote);
+            // 重新加载包含标签的笔记
+            var updatedNote = await context.Notes
+                .Include(n => n.NoteTags)
+                .ThenInclude(nt => nt.Tag)
+                .FirstAsync(n => n.Id == note.Id);
+
+            return MapToDto(updatedNote);
+        }
+        catch
+        {
+            // 回滚事务
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     /// <summary>
@@ -707,7 +759,8 @@ public class NotesService(KnowledgeBaseDbContext context, IEmbeddingService embe
                 Color = nt.Tag.Color
             })],
             CreatedAt = note.CreatedAt,
-            UpdatedAt = note.UpdatedAt
+            UpdatedAt = note.UpdatedAt,
+            IsDraft = note.IsDraft
         };
     }
 }

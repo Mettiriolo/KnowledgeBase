@@ -1,89 +1,125 @@
 <template>
   <Layout>
-    <!-- 精简布局 -->
-    <div class="min-h-screen bg-gray-50">
-      <!-- 顶部工具栏 -->
-      <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex items-center justify-between h-16">
+    <!-- 现代化编辑器布局 -->
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/10 to-indigo-50/20">
+      <!-- 顶部工具栏 - 重新设计 -->
+      <div class="bg-white/80 backdrop-blur-md border-b border-white/60 sticky top-0 z-10 shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between h-20">
             <!-- 左侧 -->
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-6">
               <button
                 @click="$router.back()"
-                class="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                class="p-3 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-white/60 transition-all duration-200 hover:scale-110"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <div class="flex items-center space-x-2">
-                <h1 class="text-lg font-semibold text-gray-900">
-                  {{ isEditMode ? '编辑笔记' : '新笔记' }}
-                </h1>
-                <span v-if="hasUnsavedChanges" class="w-2 h-2 bg-orange-400 rounded-full" title="有未保存的更改"></span>
+              <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                  <div class="p-2 bg-gradient-to-r from-primary-500 to-purple-500 rounded-xl">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 class="text-xl font-bold text-gray-900">
+                      {{ isEditMode ? '编辑笔记' : '创建新笔记' }}
+                    </h1>
+                    <div class="flex items-center space-x-2 text-sm">
+                      <span v-if="draftNoteId" class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                        草稿
+                      </span>
+                      <span v-if="hasUnsavedChanges" class="flex items-center text-amber-600">
+                        <span class="w-2 h-2 bg-amber-400 rounded-full mr-2 animate-pulse"></span>
+                        有未保存更改
+                      </span>
+                      <span v-else-if="lastSaved" class="flex items-center text-green-600">
+                        <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                        已保存
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
             <!-- 右侧 -->
-            <div class="flex items-center space-x-3">
-              <!-- 状态显示 -->
-              <div class="flex items-center space-x-2 text-sm text-gray-500">
-                <span v-if="autoSaveEnabled && lastSaved" class="flex items-center">
-                  <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <div class="flex items-center space-x-6">
+              <!-- 状态信息 -->
+              <div class="hidden sm:flex items-center space-x-4">
+                <div class="flex items-center px-3 py-2 bg-white/60 rounded-xl">
+                  <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  已保存
-                </span>
-                <span class="text-gray-300">|</span>
-                <span>{{ wordCount }} 字</span>
+                  <span class="text-sm font-medium text-gray-700">{{ wordCount }} 字</span>
+                </div>
               </div>
               
-              <!-- 保存按钮 -->
+              <!-- 保存按钮 - 重新设计 -->
               <button
-                @click="saveNote"
+                type="submit"
+                form="note-form"
                 :disabled="saving || !isValid"
-                class="inline-flex items-center px-4 py-2 text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                class="group relative inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-purple-500 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:-translate-y-0.5"
               >
-                <LoadingSpinner v-if="saving" size="small" color="white" class="mr-2" />
-                <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                {{ saving ? '保存中...' : '保存' }}
+                <div class="absolute inset-0 bg-gradient-to-r from-primary-600 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative flex items-center">
+                  <LoadingSpinner v-if="saving" size="small" color="white" class="mr-3" />
+                  <div v-else class="p-1 bg-white/20 rounded-lg mr-3 group-hover:scale-110 transition-transform">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {{ saving ? '保存中...' : '保存笔记' }}
+                </div>
               </button>
             </div>
           </div>
         </div>
       </div>
       
-      <!-- 编辑区域 -->
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <form @submit.prevent="saveNote" class="space-y-4">
+      <!-- 编辑区域 - 现代化设计 -->
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <form id="note-form" @submit.prevent="saveNote" class="space-y-8">
 
-          <!-- 标题输入 -->
-          <div class="bg-white rounded-lg shadow-sm border p-6">
-            <input
-              v-model="form.title"
-              type="text"
-              placeholder="笔记标题..."
-              class="w-full text-2xl font-bold border-0 focus:ring-0 p-0 placeholder-gray-400 bg-transparent"
-              required
-              autofocus
-            />
+          <!-- 标题和标签区域 -->
+          <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/60 p-8">
+            <!-- 标题输入 -->
+            <div class="mb-6">
+              <input
+                v-model="form.title"
+                type="text"
+                placeholder="为您的想法起个精彩的标题..."
+                class="w-full text-3xl font-bold border-0 focus:ring-0 p-0 placeholder-gray-400 bg-transparent focus:placeholder-gray-300 transition-colors"
+                required
+                autofocus
+              />
+            </div>
             
-            <!-- 标签输入 -->
-            <div class="mt-4 pt-4 border-t border-gray-100">
+            <!-- 标签输入区域 -->
+            <div class="pt-6 border-t border-gray-100">
+              <div class="flex items-center mb-3">
+                <svg class="w-5 h-5 mr-3 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <span class="text-sm font-semibold text-gray-600">标签</span>
+              </div>
               <TagInput
                 v-model="form.tags"
-                placeholder="添加标签..."
+                placeholder="添加标签帮助整理笔记..."
                 :suggestions="notesStore.tags"
                 class="border-0 focus:ring-0 p-0 bg-transparent"
               />
             </div>
           </div>
 
-          <!-- 编辑器 -->
-          <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-            <div ref="editorRef" class="toast-ui-editor min-h-96"></div>
+          <!-- 编辑器区域 -->
+          <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/60 overflow-hidden">
+            <div class="p-2">
+              <div ref="editorRef" class="toast-ui-editor min-h-96"></div>
+            </div>
           </div>
 
         </form>
@@ -202,6 +238,7 @@ const aiQuestion = ref('')
 const showLeaveConfirm = ref(false)
 const hasUnsavedChanges = ref(false)
 const leaveCallback = ref(null)
+const draftNoteId = ref(null) // 追踪自动保存创建的草稿ID
 
 // 表单数据
 const form = reactive({
@@ -218,8 +255,8 @@ const originalForm = reactive({
 })
 
 // 计算属性
-const isEditMode = computed(() => !!route.params.id)
-const noteId = computed(() => route.params.id)
+const isEditMode = computed(() => !!route.params.id || !!draftNoteId.value)
+const noteId = computed(() => route.params.id || draftNoteId.value)
 
 const isValid = computed(() => {
   return form.title.trim().length > 0 && form.content.trim().length > 0
@@ -286,10 +323,10 @@ const handleImageUpload = async (file, callback) => {
   }
 }
 
-// 自动保存
+// 自动保存 - 使用静默模式避免重复提示
 const autoSave = debounce(async () => {
   if (autoSaveEnabled.value && isValid.value && hasUnsavedChanges.value) {
-    await saveDraft()
+    await saveDraft(true) // 静默保存，不显示通知
   }
 }, 3000)
 
@@ -336,7 +373,7 @@ const initEditor = () => {
       el: editorRef.value,
       initialEditType: 'markdown',
       previewStyle: 'vertical',
-      height: 'calc(100vh - 300px)',
+      height: 'calc(100vh - 280px)',
       initialValue: form.content || '',
       usageStatistics: false,
       hideModeSwitch: false,
@@ -382,23 +419,33 @@ const initEditor = () => {
 
 // 方法
 const saveNote = async () => {
-  if (!isValid.value) return
+  if (!isValid.value || saving.value) return
 
   saving.value = true
   try {
     const noteData = {
       title: form.title,
       content: form.content,
-      tags: form.tags
+      tags: form.tags,
+      isDraft: false
     }
 
-    if (isEditMode.value) {
-      await notesStore.updateNote(noteId.value, noteData)
+    let savedNote
+    if (route.params.id) {
+      // 更新已存在的笔记
+      savedNote = await notesStore.updateNote(route.params.id, noteData)
       notificationStore.success('笔记更新成功')
+    } else if (draftNoteId.value) {
+      // 将草稿转换为正式笔记
+      const finalNoteData = { ...noteData, isDraft: false }
+      savedNote = await notesStore.updateNote(draftNoteId.value, finalNoteData)
+      notificationStore.success('笔记保存成功')
+      router.push(`/notes/${draftNoteId.value}`)
     } else {
-      const newNote = await notesStore.createNote(noteData)
+      // 创建新笔记
+      savedNote = await notesStore.createNote(noteData)
       notificationStore.success('笔记创建成功')
-      router.push(`/notes/${newNote.id}`)
+      router.push(`/notes/${savedNote.id}`)
     }
 
     hasUnsavedChanges.value = false
@@ -410,7 +457,7 @@ const saveNote = async () => {
   }
 }
 
-const saveDraft = async () => {
+const saveDraft = async (silent = false) => {
   if (!isValid.value) return
 
   try {
@@ -421,16 +468,26 @@ const saveDraft = async () => {
       isDraft: true
     }
 
-    if (isEditMode.value) {
-      await notesStore.updateNote(noteId.value, draftData)
+    if (route.params.id) {
+      // 编辑已存在的笔记
+      await notesStore.updateNote(route.params.id, draftData, false)
+    } else if (draftNoteId.value) {
+      // 更新已创建的草稿
+      await notesStore.updateNote(draftNoteId.value, draftData, false)
     } else {
-      await notesStore.createNote(draftData)
+      // 首次创建草稿
+      const draftNote = await notesStore.createNote(draftData, false)
+      draftNoteId.value = draftNote.id
     }
 
     lastSaved.value = new Date()
     hasUnsavedChanges.value = false
     updateOriginalForm()
-    notificationStore.success('草稿已保存')
+    
+    // 只在非静默模式下显示通知
+    if (!silent) {
+      notificationStore.success('草稿已保存')
+    }
   } catch (error) {
     notificationStore.error('保存草稿失败', error.message)
   }
@@ -571,9 +628,10 @@ onBeforeRouteLeave((to, from, next) => {
 <style scoped>
 /* 编辑器容器样式 */
 :deep(.toastui-editor) {
-  min-height: 500px;
+  min-height: 600px;
   border: 1px solid #e2e8f0;
   border-radius: 0.375rem;
+  width: 100%;
 }
 
 :deep(.toastui-editor-defaultUI) {

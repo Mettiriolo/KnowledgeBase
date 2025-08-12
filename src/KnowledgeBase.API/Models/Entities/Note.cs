@@ -30,6 +30,11 @@ public class Note
     public string? Summary { get; set; }
 
     /// <summary>
+    /// 获取或设置笔记是否为草稿状态
+    /// </summary>
+    public bool IsDraft { get; set; } = false;
+
+    /// <summary>
     /// 获取或设置 Qdrant 向量数据库中的向量引用 ID，该属性可为空
     /// </summary>
     public string? EmbeddingId { get; set; } // Reference to vector in Qdrant

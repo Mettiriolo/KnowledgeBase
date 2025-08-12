@@ -20,6 +20,7 @@ public class EmbeddingService : IEmbeddingService
     private readonly string _openAiApiBaseUrl; // OpenAI API 基础 URL
     private readonly string _collectionName = "knowledge_base"; // 向量集合名称
     private const int MAX_TOKENS_PER_CHUNK = 7000; // 每个分块的最大token数
+    private readonly Lazy<Task> _initializeCollectionTask; // 延迟初始化集合
 
     /// <summary>
     /// 构造函数，初始化 HttpClient、QdrantClient，并自动创建集合（如不存在）
@@ -40,8 +41,16 @@ public class EmbeddingService : IEmbeddingService
             ?? throw new ArgumentNullException(nameof(configuration), "Qdrant API key is missing in configuration.");
         _qdrantClient = new QdrantClient(qdrantHost, configuration.GetValue<int>("Qdrant:Port"),https:true,apiKey:qdrantApiKey);
 
-        // 初始化集合（若不存在则创建）
-        Task.Run(() => InitializeCollectionAsync()).Wait();
+        // 延迟初始化集合（若不存在则创建）
+        _initializeCollectionTask = new Lazy<Task>(() => InitializeCollectionAsync());
+    }
+
+    /// <summary>
+    /// 确保 Qdrant 集合已初始化
+    /// </summary>
+    private async Task EnsureCollectionInitializedAsync()
+    {
+        await _initializeCollectionTask.Value;
     }
 
     /// <summary>
@@ -97,6 +106,9 @@ public class EmbeddingService : IEmbeddingService
     /// <returns>相似笔记的ID列表</returns>
     public async Task<List<int>> SearchSimilarNotesAsync(string query, int userId, int limit = 10)
     {
+        // 确保集合已初始化
+        await EnsureCollectionInitializedAsync();
+
         // 生成查询嵌入
         var queryEmbedding = await GenerateEmbeddingAsync(query);
         if (queryEmbedding == null || queryEmbedding.Length == 0)
@@ -137,6 +149,9 @@ public class EmbeddingService : IEmbeddingService
     /// <param name="content">笔记内容</param>
     public async Task IndexNoteAsync(int userId, int noteId, string content)
     {
+        // 确保集合已初始化
+        await EnsureCollectionInitializedAsync();
+
         // 如果内容太长，进行分块处理
         if (EstimateTokenCount(content) > MAX_TOKENS_PER_CHUNK)
         {
@@ -214,6 +229,9 @@ public class EmbeddingService : IEmbeddingService
     /// <param name="noteId">笔记ID</param>
     public async Task DeleteNoteIndexAsync(int noteId)
     {
+        // 确保集合已初始化
+        await EnsureCollectionInitializedAsync();
+
         // 删除主要的点
         await _qdrantClient.DeleteAsync(_collectionName, [(ulong)noteId]);
         

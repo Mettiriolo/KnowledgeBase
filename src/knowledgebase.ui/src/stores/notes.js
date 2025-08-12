@@ -155,7 +155,7 @@ export const useNotesStore = defineStore('notes', {
       }
     },
 
-    async createNote(noteData) {
+    async createNote(noteData, showNotification = false) {
       const notificationStore = useNotificationStore()
       
       try {
@@ -164,7 +164,11 @@ export const useNotesStore = defineStore('notes', {
         this.totalNotes++
         
         this.clearCache()
-        notificationStore.success('创建成功', '笔记已创建')
+        
+        if (showNotification) {
+          notificationStore.success('创建成功', '笔记已创建')
+        }
+        
         return response.data
       } catch (error) {
         console.error('Failed to create note:', error)
@@ -173,7 +177,7 @@ export const useNotesStore = defineStore('notes', {
       }
     },
 
-    async updateNote(id, noteData) {
+    async updateNote(id, noteData, showNotification = false) {
       const notificationStore = useNotificationStore()
       
       try {
@@ -188,7 +192,11 @@ export const useNotesStore = defineStore('notes', {
         }
         
         this.clearCache()
-        notificationStore.success('更新成功', '笔记已更新')
+        
+        if (showNotification) {
+          notificationStore.success('更新成功', '笔记已更新')
+        }
+        
         return response.data
       } catch (error) {
         console.error('Failed to update note:', error)
@@ -197,7 +205,7 @@ export const useNotesStore = defineStore('notes', {
       }
     },
 
-    async deleteNote(id) {
+    async deleteNote(id, showNotification = false) {
       const notificationStore = useNotificationStore()
       
       try {
@@ -210,7 +218,10 @@ export const useNotesStore = defineStore('notes', {
         }
         
         this.clearCache()
-        notificationStore.success('删除成功', '笔记已删除')
+        
+        if (showNotification) {
+          notificationStore.success('删除成功', '笔记已删除')
+        }
       } catch (error) {
         console.error('Failed to delete note:', error)
         notificationStore.error('删除失败', '无法删除笔记')
@@ -313,14 +324,14 @@ export const useNotesStore = defineStore('notes', {
     async toggleFavorite(id) {
       const note = this.notes.find(n => n.id === id)
       if (note) {
-        await this.updateNote(id, { ...note, isFavorite: !note.isFavorite })
+        await this.updateNote(id, { ...note, isFavorite: !note.isFavorite }, false)
       }
     },
 
     async toggleArchive(id) {
       const note = this.notes.find(n => n.id === id)
       if (note) {
-        await this.updateNote(id, { ...note, isArchived: !note.isArchived })
+        await this.updateNote(id, { ...note, isArchived: !note.isArchived }, false)
       }
     },
 
@@ -341,7 +352,7 @@ export const useNotesStore = defineStore('notes', {
     async autoSave() {
       if (this.currentNote && this.currentNote.isDirty) {
         try {
-          await this.updateNote(this.currentNote.id, this.currentNote)
+          await this.updateNote(this.currentNote.id, this.currentNote, false)
           this.markNoteDirty(false)
         } catch (error) {
           console.error('Auto-save failed:', error)

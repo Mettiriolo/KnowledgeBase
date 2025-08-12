@@ -1,31 +1,49 @@
 <template>
   <Layout>
-    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary-50/30">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <!-- 智能欢迎区域 -->
-        <div class="mb-8">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                {{ getGreeting() }}，{{ authStore.userName }}！
-              </h1>
-              <p class="text-gray-600 mb-4 sm:mb-0">
-                {{ getMotivationalMessage() }}
-              </p>
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <!-- 欢迎区域 - 重新设计 -->
+        <div class="relative mb-12">
+          <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-3xl p-8 sm:p-12 text-white overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-600/90 via-purple-600/90 to-indigo-600/90"></div>
+            <div class="absolute top-4 right-4 opacity-20">
+              <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
             </div>
-            <div class="text-right">
-              <div class="text-sm text-gray-500 mb-1">{{ getCurrentDate() }}</div>
-              <div class="text-xs text-gray-400">{{ getWeatherInfo() }}</div>
+            <div class="relative">
+              <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                  <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-blue-100 bg-clip-text">
+                    {{ getGreeting() }}，{{ authStore.userName }}！
+                  </h1>
+                  <p class="text-xl text-blue-100 mb-2">{{ getMotivationalMessage() }}</p>
+                  <div class="flex items-center text-blue-200 text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V7a2 2 0 012-2h4a2 2 0 012 2v0M8 7v8a2 2 0 002 2h4a2 2 0 002-2V7M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-2" />
+                    </svg>
+                    {{ getCurrentDate() }}
+                  </div>
+                </div>
+                <div class="flex flex-col items-end space-y-4">
+                  <div class="flex items-center bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-3">
+                    <div class="text-right">
+                      <div class="text-sm text-blue-100">{{ getWeatherInfo() }}</div>
+                      <div class="text-2xl font-bold">{{ new Date().getHours() }}:{{ String(new Date().getMinutes()).padStart(2, '0') }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 数据概览仪表盘 -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- 数据概览仪表盘 - 改进版 -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 mb-12">
           <div 
             v-for="(stat, index) in enhancedStats" 
             :key="stat.title"
-            class="bg-white rounded-2xl p-6 shadow-sm border hover:shadow-md transition-all duration-300 group cursor-pointer"
+            class="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-2xl hover:bg-white transition-all duration-500 cursor-pointer transform hover:-translate-y-2"
             :class="stat.bgClass"
             @click="handleStatClick(stat)"
           >
@@ -75,7 +93,7 @@
                   @keyup.enter="performQuickSearch"
                   @focus="showSearchSuggestions = true"
                   type="text"
-                  placeholder="试试"上周的会议记录"或"关于JavaScript的笔记"..."
+                  placeholder="试试'上周的会议记录'或'关于JavaScript的笔记'..."
                   class="w-full pl-12 pr-20 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
                 />
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -106,7 +124,7 @@
             </div>
             
             <!-- 快速操作卡片 -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               <router-link
                 to="/notes/create"
                 class="group bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl p-6 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl"

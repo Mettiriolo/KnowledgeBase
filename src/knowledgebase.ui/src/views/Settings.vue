@@ -1,6 +1,6 @@
 <template>
   <Layout>
-    <div class="max-w-4xl mx-auto py-6">
+    <div class="max-w-6xl mx-auto py-6">
       <!-- 页面标题 -->
       <div class="mb-8">
         <h1 class="text-2xl font-bold text-gray-900">个人设置</h1>

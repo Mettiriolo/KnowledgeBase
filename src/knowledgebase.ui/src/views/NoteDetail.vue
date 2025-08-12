@@ -1,61 +1,88 @@
 <template>
   <Layout>
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- 加载状态 -->
-      <div v-if="loading" class="text-center py-12">
-        <LoadingSpinner />
-        <p class="mt-3 text-gray-500">加载中...</p>
-      </div>
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 加载状态 -->
+        <div v-if="loading" class="text-center py-16">
+          <div class="inline-flex items-center px-6 py-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg">
+            <LoadingSpinner />
+            <p class="ml-4 text-lg font-medium text-gray-600">加载精彩内容中...</p>
+          </div>
+        </div>
 
-      <!-- 笔记内容 -->
-      <article v-else-if="note" class="bg-white rounded-lg shadow-lg overflow-hidden">
-        <!-- 笔记头部 -->
-        <div class="p-6 lg:p-8 border-b">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <h1 class="text-3xl font-bold text-gray-900 mb-2">
-                {{ note.title }}
-              </h1>
-              <div class="flex items-center text-sm text-gray-500 space-x-4">
-                <span>创建于 {{ formatDate(note.createdAt) }}</span>
-                <span>•</span>
-                <span>更新于 {{ formatDate(note.updatedAt) }}</span>
-                <span>•</span>
-                <span>{{ wordCount }} 字</span>
+        <!-- 笔记内容 -->
+        <article v-else-if="note" class="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-white/60">
+          <!-- 笔记头部 - 重新设计 -->
+          <div class="p-8 lg:p-12 border-b border-gray-100">
+            <div class="flex items-start justify-between mb-6">
+              <div class="flex-1">
+                <div class="flex items-center mb-4">
+                  <div class="p-3 bg-gradient-to-r from-primary-500 to-purple-500 rounded-2xl mr-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 class="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-primary-600 to-purple-600 bg-clip-text text-transparent mb-2 leading-tight">
+                      {{ note.title }}
+                    </h1>
+                  </div>
+                </div>
+                
+                <!-- 元信息 -->
+                <div class="flex flex-wrap items-center gap-6 text-sm">
+                  <div class="flex items-center px-3 py-2 bg-blue-50 rounded-xl">
+                    <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V7a2 2 0 012-2h4a2 2 0 012 2v0M8 7v8a2 2 0 002 2h4a2 2 0 002-2V7M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-2" />
+                    </svg>
+                    <span class="font-medium text-blue-700">创建于 {{ formatDate(note.createdAt) }}</span>
+                  </div>
+                  <div class="flex items-center px-3 py-2 bg-green-50 rounded-xl">
+                    <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span class="font-medium text-green-700">更新于 {{ formatDate(note.updatedAt) }}</span>
+                  </div>
+                  <div class="flex items-center px-3 py-2 bg-purple-50 rounded-xl">
+                    <svg class="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="font-medium text-purple-700">{{ wordCount }} 字</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 操作按钮 - 重新设计 -->
+              <div class="flex items-center space-x-3">
+                <button
+                  @click="copyLink"
+                  class="group p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all duration-200 hover:scale-110"
+                  title="复制链接"
+                >
+                  <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                </button>
+                <router-link
+                  :to="`/notes/${note.id}/edit`"
+                  class="group p-3 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-2xl transition-all duration-200 hover:scale-110"
+                  title="编辑"
+                >
+                  <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </router-link>
+                <button
+                  @click="showDeleteConfirm = true"
+                  class="group p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all duration-200 hover:scale-110"
+                  title="删除"
+                >
+                  <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
               </div>
             </div>
-
-            <!-- 操作按钮 -->
-            <div class="flex items-center space-x-2 ml-4">
-              <button
-                @click="copyLink"
-                class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                title="复制链接"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-              </button>
-              <router-link
-                :to="`/notes/${note.id}/edit`"
-                class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                title="编辑"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </router-link>
-              <button
-                @click="showDeleteConfirm = true"
-                class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="删除"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
 
           <!-- 标签 -->
           <div v-if="note.tags && note.tags.length > 0" class="mt-4 flex flex-wrap gap-2">
@@ -90,12 +117,12 @@
 
         <!-- 笔记正文 -->
         <div class="p-6 lg:p-8">
-          <div v-show="renderFormat === 'markdown'" class="toast-ui-viewer">
+          <div v-show="renderFormat === 'markdown'" class="toast-ui-viewer max-w-none prose-lg">
             <div ref="viewerRef"></div>
           </div>
           <div
             v-show="renderFormat === 'plain'"
-            class="whitespace-pre-wrap text-gray-800 font-mono text-sm p-4 bg-gray-50 rounded-lg"
+            class="whitespace-pre-wrap text-gray-800 font-mono text-sm p-4 bg-gray-50 rounded-lg max-w-none"
           >
             {{ note.content }}
           </div>
@@ -148,6 +175,7 @@
         </button>
       </div>
     </div>
+  </div>
 
     <!-- 删除确认对话框 -->
     <teleport to="body">
@@ -426,11 +454,11 @@ const copyLink = async () => {
 
 const deleteNote = async () => {
   try {
-    await notesStore.deleteNote(noteId.value)
-    notificationStore.success('笔记已删除')
+    await notesStore.deleteNote(noteId.value, true)
     router.push('/notes')
   } catch (error) {
-    notificationStore.error('删除失败', error.message)
+    // Store method handles error notifications, no need to duplicate
+    console.error('Delete failed:', error)
   }
 }
 
@@ -443,7 +471,7 @@ const generateSummary = async () => {
     // 更新笔记摘要
     await notesStore.updateNote(noteId.value, {
       summary: response.summary
-    })
+    }, false)
 
     note.value.summary = response.summary
     notificationStore.success('摘要生成成功')
@@ -531,10 +559,17 @@ onBeforeUnmount(() => {
 
 <style>
 /* Toast UI Viewer 自定义样式 */
+.toast-ui-viewer {
+  width: 100%;
+  max-width: none !important;
+}
+
 .toast-ui-viewer .toastui-editor-contents {
   font-size: 1rem;
   line-height: 1.75;
   color: #1f2937;
+  width: 100%;
+  max-width: none !important;
 }
 
 .toast-ui-viewer .toastui-editor-contents p {

@@ -254,10 +254,11 @@ const toggleMobileMenu = () => {
 const handleLogout = async () => {
   try {
     await authStore.logout()
-    notificationStore.success('已成功退出登录')
     showUserMenu.value = false
   } catch (error) {
-    notificationStore.error('退出登录失败')
+    // Auth store handles success notifications, errors are logged in store
+    console.error('Logout error:', error)
+    showUserMenu.value = false
   }
 }
 
