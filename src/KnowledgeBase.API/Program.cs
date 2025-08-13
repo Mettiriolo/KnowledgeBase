@@ -148,8 +148,6 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 // 使用授权中间件
 app.UseAuthorization();
-// 映射控制器端点
-app.MapControllers();
 
 // 确保数据库创建和迁移
 using (var scope = app.Services.CreateScope())
@@ -159,6 +157,20 @@ using (var scope = app.Services.CreateScope())
     // 执行数据库迁移操作
     context.Database.EnsureCreated();
 }
+
+app.UseStaticFiles(); // 启用静态文件服务
+
+// 配置默认文档
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    DefaultFileNames = new List<string> { "index.html" }
+});
+
+// API 路由配置
+app.MapControllers(); // API 控制器路由
+
+// SPA 回退路由（用于客户端路由）
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
