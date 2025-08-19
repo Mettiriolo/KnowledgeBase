@@ -33,6 +33,7 @@
     "eslint-plugin-vue": "^10.2.0",
     "postcss-nesting": "^13.0.2",
     "sass-embedded": "^1.89.2",
+    "terser": "^5.43.1",
     "vite": "^7.0.0"
   }
 }
