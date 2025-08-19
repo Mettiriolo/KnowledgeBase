@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(dotnet ef migrations add:*)",
-      "Bash(dotnet build)"
+      "Bash(dotnet build)",
+      "Bash(dotnet ef database:*)",
+      "Bash(taskkill:*)",
+      "Bash(wmic process where ProcessId=30824 delete:*)",
+      "Bash(SET PGPASSWORD=123123)",
+      "Bash(psql:*)",
+      "Bash(PGPASSWORD=123123 psql -h localhost -p 5432 -U postgres -d knowledge_base -c \"ALTER TABLE \"\"Notes\"\" ADD COLUMN \"\"IsDraft\"\" boolean NOT NULL DEFAULT false;\")",
+      "Bash(timeout:*)",
+      "Bash(start /b dotnet run)",
+      "Bash(rm:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

@@ -273,8 +273,13 @@ const handleClickOutside = (event) => {
 const handleKeydown = (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
     event.preventDefault()
-    const searchInput = document.querySelector('input[placeholder*="快速搜索"]')
-    if (searchInput) searchInput.focus()
+    const searchInput = document.querySelector('input[placeholder*="搜索"]')
+    if (searchInput) {
+      searchInput.focus()
+    } else {
+      // 如果搜索框不可见（移动端），导航到搜索页面
+      router.push('/search')
+    }
   }
 }
 

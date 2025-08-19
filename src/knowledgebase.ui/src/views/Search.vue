@@ -392,6 +392,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useNotesStore } from '@/stores/notes'
 import { useSearchStore } from '@/stores/search'
 import { useNotificationStore } from '@/stores/notification'
@@ -400,6 +401,7 @@ import LoadingSpinner from '@/components/Common/LoadingSpinner.vue'
 import { formatDate } from '@/utils/date'
 import { debounce, escapeRegExp } from 'lodash-es'
 
+const route = useRoute()
 const notesStore = useNotesStore()
 const searchStore = useSearchStore()
 const notificationStore = useNotificationStore()
@@ -597,6 +599,20 @@ const getHighlightedExcerpt = (result) => {
 onMounted(() => {
   // 加载搜索历史
   searchStore.loadHistoryFromLocal()
+  
+  // 检查URL查询参数，如果有查询字符串则自动执行搜索
+  if (route.query.q && typeof route.query.q === 'string') {
+    searchQuery.value = route.query.q
+    performSmartSearch()
+  }
+})
+
+// 监听路由查询参数变化
+watch(() => route.query.q, (newQuery) => {
+  if (newQuery && typeof newQuery === 'string' && newQuery !== searchQuery.value) {
+    searchQuery.value = newQuery
+    performSmartSearch()
+  }
 })
 
 // 监听过滤条件变化

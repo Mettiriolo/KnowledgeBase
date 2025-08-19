@@ -30,18 +30,20 @@ export const useSearchStore = defineStore('search', {
       try {
         let response
         if (type === 'semantic') {
-          response = await searchAPI.semanticSearch({ query, page, limit })
+          response = await searchAPI.semanticSearch({ Query: query, Limit: limit })
         } else {
-          response = await searchAPI.fullTextSearch({ query, page, limit })
+          // Use the correct fulltext search endpoint
+          response = await searchAPI.fulltextSearch({ Query: query, Limit: limit })
         }
 
-        this.searchResults = response.data.results
-        this.totalResults = response.data.total
+        // Handle direct array response from backend
+        this.searchResults = Array.isArray(response.data) ? response.data : response.data.results || []
+        this.totalResults = this.searchResults.length
         this.currentPage = page
         this.perPage = limit
         this.addToHistory(query)
         
-        return response.data.results
+        return this.searchResults
       } catch (error) {
         console.error('Search failed:', error)
         throw error
@@ -153,6 +155,34 @@ export const useSearchStore = defineStore('search', {
     // 全文搜索  
     async fulltextSearch(query, page = 1, limit = 20) {
       return await this.searchNotes(query, 'fulltext', page, limit)
+    },
+
+    // 智能搜索 - 使用AI进行智能搜索
+    async smartSearch(query, options = {}) {
+      if (!query.trim()) return []
+
+      this.isSearching = true
+      this.lastQuery = query
+      this.searchType = 'smart'
+
+      try {
+        const response = await searchAPI.smartSearch(query, {
+          limit: options.limit || 10,
+          ...options
+        })
+
+        // Handle the smart search response structure
+        this.searchResults = response.data.results || []
+        this.totalResults = response.data.total || this.searchResults.length
+        this.addToHistory({ query, type: 'smart' })
+        
+        return this.searchResults
+      } catch (error) {
+        console.error('Smart search failed:', error)
+        throw error
+      } finally {
+        this.isSearching = false
+      }
     }
   }
 })

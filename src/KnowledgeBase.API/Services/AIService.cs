@@ -142,23 +142,33 @@ public class AIService : IAIService
     /// <returns>搜索结果</returns>
     public async Task<List<SearchResult>> SmartSearchAsync(string query, int userId, int limit = 10)
     {
-        // 先获取语义相似的笔记（多取一些用于重排序）
-        var candidateNoteIds = await _embeddingService.SearchSimilarNotesAsync(query, userId, limit * 2);
-        
-        if (!candidateNoteIds.Any())
+        try
         {
+            // 先获取语义相似的笔记（多取一些用于重排序）
+            var candidateNoteIds = await _embeddingService.SearchSimilarNotesAsync(query, userId, Math.Max(limit * 2, 20));
+            
+            if (!candidateNoteIds.Any())
+            {
+                return new List<SearchResult>();
+            }
+            
+            // 根据索引计算相关性分数，索引越小分数越高
+            var results = candidateNoteIds.Select((noteId, index) => new SearchResult
+            {
+                NoteId = noteId,
+                Score = Math.Max(0.1f, 1.0f - (index * 0.05f)), // 分数范围在0.1到1.0之间
+                MatchType = "semantic",
+                Highlight = null // 可以后续添加高亮显示功能
+            }).Take(limit).ToList();
+            
+            return results;
+        }
+        catch (Exception ex)
+        {
+            // 记录错误并返回空结果，避免整个搜索功能崩溃
+            Console.WriteLine($"Smart search failed: {ex.Message}");
             return new List<SearchResult>();
         }
-        
-        // TODO: 这里需要从数据库获取笔记内容，暂时返回基本结果
-        var results = candidateNoteIds.Select((noteId, index) => new SearchResult
-        {
-            NoteId = noteId,
-            Score = 1.0f - (index * 0.05f), // 简单的分数递减
-            MatchType = "semantic"
-        }).Take(limit).ToList();
-        
-        return results;
     }
 
     /// <summary>

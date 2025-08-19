@@ -1,3 +1,4 @@
+using KnowledgeBase.API.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KnowledgeBase.API.Services;
@@ -114,6 +115,50 @@ namespace KnowledgeBase.API.Controllers
         }
 
         /// <summary>
+        /// 智能搜索
+        /// 结合语义搜索和AI重排序提供最佳搜索结果
+        /// </summary>
+        /// <param name="request">包含搜索查询的请求</param>
+        /// <returns>搜索结果列表</returns>
+        [HttpPost("smart-search")]
+        public async Task<ActionResult<SmartSearchResponse>> SmartSearch([FromBody] SmartSearchRequest request)
+        {
+            try
+            {
+                var userId = GetUserId();
+                
+                // 使用AI服务进行智能搜索
+                var searchResults = await aiService.SmartSearchAsync(request.Query, userId, request.Limit ?? 10);
+                
+                // 获取笔记详细信息
+                var notes = new List<NoteDto>();
+                foreach (var result in searchResults)
+                {
+                    var note = await notesService.GetNoteAsync(result.NoteId, userId);
+                    if (note != null)
+                    {
+                        // 添加搜索相关信息
+                        var noteWithScore = note;
+                        noteWithScore.Score = result.Score;
+                        noteWithScore.MatchType = result.MatchType;
+                        notes.Add(noteWithScore);
+                    }
+                }
+
+                return Ok(new SmartSearchResponse 
+                { 
+                    Results = notes,
+                    Total = notes.Count,
+                    Query = request.Query
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Smart search failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 从JWT令牌中获取用户ID
         /// </summary>
         /// <returns>用户ID</returns>
@@ -170,5 +215,52 @@ namespace KnowledgeBase.API.Controllers
         /// 相关的笔记ID列表
         /// </summary>
         public List<int> RelevantNotes { get; set; } = [];
+    }
+
+    /// <summary>
+    /// 智能搜索请求模型
+    /// </summary>
+    public class SmartSearchRequest
+    {
+        /// <summary>
+        /// 搜索查询文本
+        /// </summary>
+        public required string Query { get; set; }
+        
+        /// <summary>
+        /// 结果数量限制（可选）
+        /// </summary>
+        public int? Limit { get; set; }
+        
+        /// <summary>
+        /// 用户ID（可选，从JWT中获取）
+        /// </summary>
+        public int? UserId { get; set; }
+        
+        /// <summary>
+        /// 是否包含内容摘要
+        /// </summary>
+        public bool IncludeContent { get; set; } = false;
+    }
+
+    /// <summary>
+    /// 智能搜索响应模型
+    /// </summary>
+    public class SmartSearchResponse
+    {
+        /// <summary>
+        /// 搜索结果列表
+        /// </summary>
+        public List<NoteDto> Results { get; set; } = [];
+        
+        /// <summary>
+        /// 总结果数
+        /// </summary>
+        public int Total { get; set; }
+        
+        /// <summary>
+        /// 原始查询
+        /// </summary>
+        public string Query { get; set; } = string.Empty;
     }
 }

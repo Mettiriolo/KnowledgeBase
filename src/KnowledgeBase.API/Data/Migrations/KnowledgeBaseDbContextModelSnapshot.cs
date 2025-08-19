@@ -77,6 +77,9 @@ namespace KnowledgeBase.API.Data.Migrations
                     b.Property<string>("EmbeddingId")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDraft")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Summary")
                         .HasColumnType("text");
 

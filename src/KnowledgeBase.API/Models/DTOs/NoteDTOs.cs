@@ -35,6 +35,12 @@ public class NoteDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public bool IsDraft { get; set; } = false;
+    
+    // 搜索相关属性
+    public float? Score { get; set; }
+    public string? MatchType { get; set; }
+    public string? Excerpt { get; set; }
+    public List<string>? MatchLocations { get; set; }
 }
 
 public class TagDto

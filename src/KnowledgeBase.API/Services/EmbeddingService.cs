@@ -35,11 +35,19 @@ public class EmbeddingService : IEmbeddingService
             ?? throw new ArgumentNullException(nameof(configuration), "OpenAI API key is missing in configuration.");
         _openAiApiBaseUrl = configuration["OpenAI:ApiBaseUrl"]
             ?? throw new ArgumentNullException(nameof(configuration), "OpenAI API base URL is missing in configuration.");
-        var qdrantHost = configuration["Qdrant:Host"]
-            ?? throw new ArgumentNullException(nameof(configuration), "Qdrant host is missing in configuration.");
+        var qdrantHost = configuration["Qdrant:Host"] ?? configuration["Qdrant:ApiBaseUrl"]
+            ?? throw new ArgumentNullException(nameof(configuration), "Qdrant host/ApiBaseUrl is missing in configuration.");
         var qdrantApiKey = configuration["Qdrant:ApiKey"]
             ?? throw new ArgumentNullException(nameof(configuration), "Qdrant API key is missing in configuration.");
-        _qdrantClient = new QdrantClient(qdrantHost, configuration.GetValue<int>("Qdrant:Port"),https:true,apiKey:qdrantApiKey);
+        
+        // Extract host from URL if ApiBaseUrl is provided
+        if (qdrantHost.StartsWith("http"))
+        {
+            var uri = new Uri(qdrantHost);
+            qdrantHost = uri.Host;
+        }
+        
+        _qdrantClient = new QdrantClient(qdrantHost, configuration.GetValue<int?>("Qdrant:Port") ?? 6333, https: true, apiKey: qdrantApiKey);
 
         // 延迟初始化集合（若不存在则创建）
         _initializeCollectionTask = new Lazy<Task>(() => InitializeCollectionAsync());

@@ -74,7 +74,7 @@
         </div>
 
         <!-- 智能工作台 -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <!-- 快速操作区 -->
           <div class="lg:col-span-2 space-y-6">
             <!-- 快速搜索 -->
@@ -196,24 +196,39 @@
           </div>
           
           <!-- 右侧信息栏 -->
-          <div class="space-y-6">
+          <div class="space-y-4">
             <!-- 今日活动 -->
             <div class="bg-white rounded-2xl shadow-sm border p-6">
               <h3 class="font-semibold text-gray-900 mb-4">今日活动</h3>
               <div class="space-y-4">
-                <div v-for="activity in todayActivities" :key="activity.id" class="flex items-center space-x-3">
-                  <div :class="activity.dotColor" class="w-2 h-2 rounded-full"></div>
-                  <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-900">{{ activity.action }}</p>
+                <div 
+                  v-for="activity in todayActivities" 
+                  :key="activity.id" 
+                  class="flex items-center space-x-3"
+                  :class="activity.noteId ? 'cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors' : ''"
+                  @click="activity.noteId ? viewNote(activity.noteId) : null"
+                >
+                  <div :class="activity.dotColor" class="w-2 h-2 rounded-full flex-shrink-0"></div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ activity.action }}</p>
                     <p class="text-xs text-gray-500">{{ activity.time }}</p>
                   </div>
+                  <svg 
+                    v-if="activity.noteId" 
+                    class="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
               </div>
             </div>
             
             <!-- 快捷访问 -->
-            <div class="bg-white rounded-2xl shadow-sm border p-6">
-              <h3 class="font-semibold text-gray-900 mb-4">快捷访问</h3>
+            <div class="bg-white rounded-2xl shadow-sm border p-5">
+              <h3 class="font-semibold text-gray-900 mb-3">快捷访问</h3>
               <div class="space-y-3">
                 <!-- 热门标签 -->
                 <div v-if="popularTags.length > 0">
@@ -254,20 +269,24 @@
             </div>
             
             <!-- 数据洞察 -->
-            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border">
-              <h3 class="font-semibold text-gray-900 mb-4">数据洞察</h3>
-              <div class="space-y-4">
+            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border">
+              <h3 class="font-semibold text-gray-900 mb-3">数据洞察</h3>
+              <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-600">本周写作时间</span>
-                  <span class="font-semibold text-indigo-600">{{ weeklyWritingTime }}</span>
+                  <span class="font-semibold text-indigo-600">{{ dataInsights.weeklyWritingTime }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-600">最佳写作时段</span>
-                  <span class="font-semibold text-purple-600">{{ bestWritingTime }}</span>
+                  <span class="font-semibold text-purple-600">{{ dataInsights.bestWritingTime }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-600">平均笔记长度</span>
-                  <span class="font-semibold text-pink-600">{{ averageNoteLength }} 字</span>
+                  <span class="font-semibold text-pink-600">{{ dataInsights.averageNoteLength }} 字</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600">本周写作会话</span>
+                  <span class="font-semibold text-green-600">{{ dataInsights.writingSessions }} 次</span>
                 </div>
               </div>
             </div>
@@ -531,48 +550,247 @@ const searchSuggestions = [
   '学习笔记和心得'
 ]
 
-// 智能推荐
-const recommendations = ref([
-  {
-    id: 1,
-    title: '复习上周的笔记',
-    description: '您上周创建了12篇笔记，建议回顾一下',
-    icon: 'ClockIcon',
-    iconBg: 'bg-indigo-100',
-    iconColor: 'text-indigo-600',
-    action: 'reviewLastWeek'
-  },
-  {
-    id: 2,
-    title: '整理无标签笔记',
-    description: '有18篇笔记还没有添加标签',
-    icon: 'TagIcon',
-    iconColor: 'text-yellow-600',
-    iconBg: 'bg-yellow-100',
-    action: 'organizeNotes'
-  },
-  {
-    id: 3,
-    title: '分享知识卡片',
-    description: '把您的精彩笔记制作成卡片分享',
-    icon: 'ShareIcon',
-    iconColor: 'text-pink-600',
-    iconBg: 'bg-pink-100',
-    action: 'createKnowledgeCard'
+// 智能推荐 - 基于真实数据动态生成
+const recommendations = computed(() => {
+  const notes = notesStore.notes || []
+  const recentNotes = notes.slice(0, 10)
+  const recs = []
+  
+  // 检查未标记的笔记
+  const untaggedNotes = notes.filter(note => !note.tags || note.tags.length === 0)
+  if (untaggedNotes.length > 0) {
+    recs.push({
+      id: 'untagged',
+      title: '整理无标签笔记',
+      description: `有 ${untaggedNotes.length} 篇笔记还没有添加标签`,
+      icon: 'TagIcon',
+      iconColor: 'text-yellow-600',
+      iconBg: 'bg-yellow-100',
+      action: 'organizeNotes'
+    })
   }
-])
 
-// 今日活动
-const todayActivities = ref([
-  { id: 1, action: '创建了《React项目经验》', time: '10:30', dotColor: 'bg-green-400' },
-  { id: 2, action: '更新了《产品设计思路》', time: '14:15', dotColor: 'bg-blue-400' },
-  { id: 3, action: '搜索了"API设计"', time: '16:45', dotColor: 'bg-purple-400' }
-])
+  // 检查上周的笔记回顾
+  const lastWeekNotes = notes.filter(note => {
+    const noteDate = new Date(note.createdAt)
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+    return noteDate >= twoWeeksAgo && noteDate < weekAgo
+  })
+  if (lastWeekNotes.length > 0) {
+    recs.push({
+      id: 'reviewLastWeek',
+      title: '复习上周的笔记',
+      description: `您上周创建了 ${lastWeekNotes.length} 篇笔记，建议回顾一下`,
+      icon: 'ClockIcon',
+      iconBg: 'bg-indigo-100',
+      iconColor: 'text-indigo-600',
+      action: 'reviewLastWeek'
+    })
+  }
 
-// 数据洞察
-const weeklyWritingTime = ref('3.5小时')
-const bestWritingTime = ref('上午5-10点')
-const averageNoteLength = ref('520')
+  // 检查长时间未编辑的笔记
+  const staleNotes = notes.filter(note => {
+    const updateDate = new Date(note.updatedAt)
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    return updateDate < monthAgo
+  })
+  if (staleNotes.length > 2) {
+    recs.push({
+      id: 'reviewOldNotes',
+      title: '回顾旧笔记',
+      description: `有 ${staleNotes.length} 篇笔记超过一个月未更新`,
+      icon: 'DocumentTextIcon',
+      iconBg: 'bg-gray-100',
+      iconColor: 'text-gray-600',
+      action: 'reviewOldNotes'
+    })
+  }
+
+  // 检查相似笔记（简单的标题关键词匹配）
+  const titleWords = new Map()
+  notes.forEach(note => {
+    const words = note.title.split(/\s+/).filter(word => word.length > 2)
+    words.forEach(word => {
+      titleWords.set(word.toLowerCase(), (titleWords.get(word.toLowerCase()) || 0) + 1)
+    })
+  })
+  const commonWords = Array.from(titleWords.entries())
+    .filter(([word, count]) => count > 1)
+    .sort((a, b) => b[1] - a[1])
+  
+  if (commonWords.length > 0) {
+    const [word, count] = commonWords[0]
+    recs.push({
+      id: 'relatedNotes',
+      title: '整合相关笔记',
+      description: `发现 ${count} 篇关于"${word}"的笔记，可以整合归类`,
+      icon: 'ShareIcon',
+      iconColor: 'text-purple-600',
+      iconBg: 'bg-purple-100',
+      action: 'consolidateNotes',
+      keyword: word
+    })
+  }
+
+  // 如果没有足够的推荐，添加通用建议
+  if (recs.length === 0) {
+    recs.push({
+      id: 'createNote',
+      title: '开始写作',
+      description: '创建您的第一篇笔记，记录美好想法',
+      icon: 'PlusCircleIcon',
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+      action: 'createNote'
+    })
+  }
+
+  return recs.slice(0, 3) // 最多显示3个推荐
+})
+
+// 今日活动 - 基于真实用户活动
+const todayActivities = computed(() => {
+  const activities = []
+  const today = new Date().toDateString()
+  const notes = notesStore.notes || []
+  
+  // 获取今日创建的笔记
+  const todayCreated = notes.filter(note => 
+    new Date(note.createdAt).toDateString() === today
+  ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  
+  todayCreated.forEach(note => {
+    const time = new Date(note.createdAt).toLocaleTimeString('zh-CN', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+    activities.push({
+      id: `create-${note.id}`,
+      action: `创建了《${note.title}》`,
+      time,
+      dotColor: 'bg-green-400',
+      noteId: note.id
+    })
+  })
+  
+  // 获取今日更新的笔记（排除今日创建的）
+  const todayUpdated = notes.filter(note => {
+    const updateDate = new Date(note.updatedAt).toDateString()
+    const createDate = new Date(note.createdAt).toDateString()
+    return updateDate === today && createDate !== today
+  }).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+  
+  todayUpdated.forEach(note => {
+    const time = new Date(note.updatedAt).toLocaleTimeString('zh-CN', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+    activities.push({
+      id: `update-${note.id}`,
+      action: `更新了《${note.title}》`,
+      time,
+      dotColor: 'bg-blue-400',
+      noteId: note.id
+    })
+  })
+
+  // 获取最近搜索历史（今日的）
+  const todaySearches = (searchStore.searchHistory || []).filter(search => {
+    if (typeof search === 'string') return false
+    const searchTime = search.timestamp ? new Date(search.timestamp) : new Date()
+    return searchTime.toDateString() === today
+  }).slice(0, 2)
+  
+  todaySearches.forEach(search => {
+    const time = search.timestamp 
+      ? new Date(search.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      : '最近'
+    activities.push({
+      id: `search-${search.query}`,
+      action: `搜索了"${search.query}"`,
+      time,
+      dotColor: 'bg-purple-400'
+    })
+  })
+
+  // 按时间排序并限制数量
+  const sortedActivities = activities
+    .sort((a, b) => {
+      // 将时间字符串转换为今日的完整时间进行比较
+      const timeA = new Date(`${today} ${a.time}`)
+      const timeB = new Date(`${today} ${b.time}`)
+      return timeB - timeA
+    })
+    .slice(0, 5)
+  
+  // 如果没有今日活动，显示提示
+  if (sortedActivities.length === 0) {
+    return [{
+      id: 'no-activity',
+      action: '今天还没有活动',
+      time: '开始创建',
+      dotColor: 'bg-gray-300'
+    }]
+  }
+  
+  return sortedActivities
+})
+
+// 数据洞察 - 基于真实数据计算
+const dataInsights = computed(() => {
+  const notes = notesStore.notes || []
+  
+  if (notes.length === 0) {
+    return {
+      weeklyWritingTime: '开始写作',
+      bestWritingTime: '等待数据',
+      averageNoteLength: '0',
+      totalWords: 0,
+      writingSessions: 0
+    }
+  }
+  
+  // 计算总字数和平均长度
+  const totalWords = notes.reduce((sum, note) => sum + (note.content?.length || 0), 0)
+  const averageLength = Math.round(totalWords / notes.length)
+  
+  // 计算本周写作时间（估算）
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const thisWeekNotes = notes.filter(note => new Date(note.createdAt) >= weekAgo)
+  const thisWeekWords = thisWeekNotes.reduce((sum, note) => sum + (note.content?.length || 0), 0)
+  // 假设每分钟写50个字
+  const estimatedMinutes = Math.round(thisWeekWords / 50)
+  const hours = Math.floor(estimatedMinutes / 60)
+  const minutes = estimatedMinutes % 60
+  const weeklyWritingTime = hours > 0 
+    ? `${hours}小时${minutes > 0 ? minutes + '分钟' : ''}`
+    : minutes > 0 ? `${minutes}分钟` : '< 1分钟'
+  
+  // 分析最佳写作时段
+  const hourCounts = new Array(24).fill(0)
+  notes.forEach(note => {
+    const hour = new Date(note.createdAt).getHours()
+    hourCounts[hour]++
+  })
+  
+  const maxHour = hourCounts.indexOf(Math.max(...hourCounts))
+  const bestWritingTime = maxHour === -1 ? '暂无数据' : 
+    maxHour < 6 ? '凌晨时分' :
+    maxHour < 12 ? '上午时光' :
+    maxHour < 18 ? '下午时段' : '夜晚时间'
+  
+  // 计算写作会话数（连续活动视为一次会话）
+  const sessions = thisWeekNotes.length
+  
+  return {
+    weeklyWritingTime,
+    bestWritingTime,
+    averageNoteLength: averageLength,
+    totalWords,
+    writingSessions: sessions
+  }
+})
 
 const recentNotes = computed(() => notesStore.recentNotes)
 
@@ -716,21 +934,46 @@ const handleStatClick = (stat) => {
 const handleRecommendationClick = (recommendation) => {
   switch (recommendation.action) {
     case 'reviewLastWeek':
-      router.push('/notes?filter=lastWeek')
+      // 搜索上周创建的笔记
+      const lastWeekStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const lastWeekEnd = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      router.push(`/notes?dateRange=${lastWeekStart},${lastWeekEnd}`)
       break
     case 'organizeNotes':
-      router.push('/notes?filter=untagged')
+      // 跳转到笔记页面，过滤未标记的笔记
+      router.push('/notes?untagged=true')
       break
-    case 'createKnowledgeCard':
-      // 未来功能
-      notificationStore.info('功能开发中', '知识卡片功能即将上线')
+    case 'reviewOldNotes':
+      // 跳转到笔记页面，过滤旧笔记
+      const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      router.push(`/notes?updatedBefore=${monthAgo}`)
+      break
+    case 'consolidateNotes':
+      // 搜索相关关键词的笔记
+      if (recommendation.keyword) {
+        router.push(`/search?q=${encodeURIComponent(recommendation.keyword)}`)
+      }
+      break
+    case 'createNote':
+      router.push('/notes/create')
+      break
+    default:
+      notificationStore.info('功能开发中', '该功能即将上线')
       break
   }
 }
 
-const refreshRecommendations = () => {
-  // 这里可以根据用户行为生成个性化推荐
-  notificationStore.success('推荐已刷新')
+const refreshRecommendations = async () => {
+  try {
+    // 重新获取最新的笔记数据
+    await notesStore.fetchNotes(1, 50)
+    await notesStore.fetchTags()
+    
+    // 由于recommendations是computed，会自动重新计算
+    notificationStore.success('推荐已更新', '基于最新数据为您生成新的建议')
+  } catch (error) {
+    notificationStore.error('刷新失败', '无法获取最新数据')
+  }
 }
 
 onMounted(async () => {
